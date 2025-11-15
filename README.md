@@ -9,8 +9,8 @@
   + Picture: Pt+name
   + Combobox: Cbx+name
   + ... anh e viết đặt thêm quy tắc các nút khác nếu có
-    
-    
+- Khi tạo form mới đổi tên đưa form vô foder views đồng thời sửa NAMESPACE 2 file của form : name_form.cs,nameform[designer].cs
+- Sau đó add thêm using file ở program.cs  
 QUY TRÌNH LÀM VIỆC: 
 Chào team, chúng ta sẽ sử dụng quy trình Fork & Pull Request để làm việc nhóm. Đây là các bước thiết lập và quy trình làm việc hàng ngày.
 
