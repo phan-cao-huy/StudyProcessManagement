@@ -1,130 +1,155 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using StudyProcessManagement.Business.Admin;
+using StudyProcessManagement.Models;
+using StudyProcessManagement.Views.Admin.Teacher.TeacherMangement; 
+using StudyProcessManagement.Views.Admin.User; 
 
 namespace StudyProcessManagement.Views.Admin.Student.StudentManagement
 {
     public partial class StudentManagement : Form
     {
+        // Khởi tạo Service
+        private StudentService studentService = new StudentService();
+
         public StudentManagement()
         {
             InitializeComponent();
-            // Cấu hình chung cho các nút menu
+            this.Size = new System.Drawing.Size(1324, 673);
+
+            // Tải dữ liệu ngay khi mở form
+            LoadStudentData();
         }
+
         private void StudentManagement_Load(object sender, EventArgs e)
         {
-            // Gán sự kiện cho các nút
-            this.btnAddUser.Click += new System.EventHandler(this.btnAddUser_Click);
-            this.btnExportExcel.Click += new System.EventHandler(this.btnExportExcel_Click);
-
-            // Tải dữ liệu
-            LoadUserData();
+            // Không cần làm gì thêm
         }
 
-        // Hàm giả lập tải dữ liệu (thay bằng logic database của ông)
-        private void LoadUserData()
+        // --- HÀM TẢI DỮ LIỆU ---
+        private void LoadStudentData()
         {
-            // Xóa dữ liệu cũ (nếu có)
-            dataGridViewUsers.Rows.Clear();
-
-            // Thêm dữ liệu mẫu giống như file HTML
-            dataGridViewUsers.Rows.Add("001", "Nguyễn Văn A", "nguyenvana@email.com", "Giảng viên", "Hoạt động");
-            dataGridViewUsers.Rows.Add("002", "Trần Thị B", "tranthib@email.com", "Học viên", "Hoạt động");
-            dataGridViewUsers.Rows.Add("003", "Lê Văn C", "levanc@email.com", "Giảng viên", "Đã khóa");
-            dataGridViewUsers.Rows.Add("004", "Phạm Thị D", "phamthid@email.com", "Học viên", "Hoạt động");
-
-            // Ông nên dùng DataTable hoặc List<User> gán vào DataSource
-            // ví dụ: dataGridViewUsers.DataSource = GetUsersFromDatabase();
-        }
-
-        // Xử lý sự kiện khi click vào các nút "Xem", "Sửa", "Xóa" trong bảng
-        private void dataGridViewUsers_CellContentClick(object sender, DataGridViewCellEventArgs e)
-        {
-            // Bỏ qua nếu click vào header
-            if (e.RowIndex < 0) return;
-
-            // Lấy ID của user ở hàng được click
-            string userId = dataGridViewUsers.Rows[e.RowIndex].Cells["colId"].Value.ToString();
-
-            // Kiểm tra xem đã click vào cột nút nào
-            if (e.ColumnIndex == dataGridViewUsers.Columns["colView"].Index)
+            try
             {
-                // Logic nút "Xem"
-                MessageBox.Show($"Xem chi tiết người dùng ID: {userId}");
-            }
-            else if (e.ColumnIndex == dataGridViewUsers.Columns["colEdit"].Index)
-            {
-                // Logic nút "Sửa"
-                // Đây là lúc gọi "Modal" (Form mới)
-                OpenAddEditUserForm(userId);
-            }
-            else if (e.ColumnIndex == dataGridViewUsers.Columns["colDelete"].Index)
-            {
-                // Logic nút "Xóa"
-                var result = MessageBox.Show($"Bạn có chắc muốn xóa người dùng ID: {userId}?", "Xác nhận xóa", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                if (result == DialogResult.Yes)
+                dataGridViewUsers.Rows.Clear();
+                string keyword = txtSearch.Text.Trim();
+                if (txtSearch.ForeColor == Color.Gray)
                 {
-                    // Thực hiện logic xóa...
-                    MessageBox.Show($"Đã xóa người dùng ID: {userId}");
-                    // Tải lại dữ liệu
-                    LoadUserData();
+                    keyword = "";
+                }
+
+                // Gọi Service
+                List<Users> list = studentService.GetAllStudents(keyword);
+                if (keyword == "Tìm kiếm học viên...") keyword = "";
+
+                foreach (var u in list)
+                {
+                    int index = dataGridViewUsers.Rows.Add(
+                        u.UserID,
+                        u.FullName,
+                        u.Email,
+                        u.Role,
+                        u.StatusText
+                    );
+
+                    // Tô màu trạng thái
+                    if (u.IsActive)
+                        dataGridViewUsers.Rows[index].Cells["colStatus"].Style.ForeColor = Color.Green;
+                    else
+                        dataGridViewUsers.Rows[index].Cells["colStatus"].Style.ForeColor = Color.Red;
                 }
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi tải dữ liệu: " + ex.Message);
+            }
         }
 
-        // Sự kiện cho nút "Thêm người dùng"
+        // --- 1. NÚT THÊM HỌC VIÊN ---
         private void btnAddUser_Click(object sender, EventArgs e)
         {
-            OpenAddEditUserForm(null); // Gọi với ID null để báo là "thêm mới"
+            UserDetailForm form = new UserDetailForm(null, false);
+
+            // Thiết lập mặc định: Role là Student và Khóa lại không cho sửa
+            form.cboRole.SelectedItem = "Student";
+            form.cboRole.Enabled = false;
+
+            if (form.ShowDialog() == DialogResult.OK) LoadStudentData();
         }
 
-        // Sự kiện cho nút "Xuất Excel"
-        private void btnExportExcel_Click(object sender, EventArgs e)
+        // --- 2. XỬ LÝ SỰ KIỆN TRÊN BẢNG (XÓA / SỬA / XEM) ---
+        private void dataGridViewUsers_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
-            MessageBox.Show("Đang thực hiện logic xuất Excel...");
-            // Thêm logic xuất Excel của ông ở đây
+            // Bỏ qua header
+            if (e.RowIndex < 0 || e.RowIndex >= dataGridViewUsers.Rows.Count) return;
+
+            DataGridViewRow row = dataGridViewUsers.Rows[e.RowIndex];
+            string userId = row.Cells[0].Value?.ToString();
+            string userName = row.Cells[1].Value?.ToString();
+
+            if (string.IsNullOrEmpty(userId)) return;
+
+            // XÓA
+            if (dataGridViewUsers.Columns[e.ColumnIndex].Name == "colDelete")
+            {
+                if (MessageBox.Show($"Bạn có chắc muốn xóa học viên '{userName}'?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+                {
+                    if (studentService.DeleteStudent(userId))
+                    {
+                        MessageBox.Show("Xóa thành công!", "Thông báo");
+                        LoadStudentData();
+                    }
+                    else MessageBox.Show("Xóa thất bại!", "Lỗi");
+                }
+            }
+            // SỬA
+            else if (dataGridViewUsers.Columns[e.ColumnIndex].Name == "colEdit")
+            {
+                OpenDetailForm(userId);
+            }
+            // XEM CHI TIẾT
+            else if (dataGridViewUsers.Columns[e.ColumnIndex].Name == "colView")
+            {
+                UserDetailForm form = new UserDetailForm(userId, true);
+                form.ShowDialog();
+            }
         }
 
-
-        // Hàm gọi "Modal" (Form mới)
-        private void OpenAddEditUserForm(string userId = null)
+        // Hàm phụ trợ mở form sửa
+        private void OpenDetailForm(string userId)
         {
-            // Ông sẽ cần tạo một Form mới tên là AddEditUserForm
-            // AddEditUserForm modalForm = new AddEditUserForm(userId);
-
-            // Dùng ShowDialog() để nó chặn form cha, giống hệt modal HTML
-            // var result = modalForm.ShowDialog();
-
-            // if (result == DialogResult.OK)
-            // {
-            //    // Nếu form kia lưu thành công thì tải lại dữ liệu
-            //    LoadUserData();
-            // }
-
-            // Giả lập
-            if (userId == null)
-            {
-                MessageBox.Show("Mở form THÊM MỚI người dùng...");
-            }
-            else
-            {
-                MessageBox.Show($"Mở form SỬA người dùng ID: {userId}...");
-            }
-
-            // Tải lại dữ liệu (để giả lập)
-            // LoadUserData(); // Bỏ comment khi dùng form thật
+            UserDetailForm form = new UserDetailForm(userId, false);
+            form.cboRole.Enabled = false; // Khóa role khi sửa luôn (Student thì mãi là Student)
+            if (form.ShowDialog() == DialogResult.OK) LoadStudentData();
         }
 
-        // Xử lý logic placeholder cho ô tìm kiếm
+        // --- 3. TÌM KIẾM ---
+        private void txtSearch_TextChanged(object sender, EventArgs e)
+        {
+            if (txtSearch.Text != "Tìm kiếm học viên...") LoadStudentData();
+        }
+
+        private void lblSearchIcon_Click(object sender, EventArgs e)
+        {
+            LoadStudentData();
+        }
+
+        private void txtSearch_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                LoadStudentData();
+                e.SuppressKeyPress = true;
+                e.Handled = true;
+            }
+        }
+
+        // --- 4. PLACEHOLDER UI ---
         private void txtSearch_Enter(object sender, EventArgs e)
         {
-            if (txtSearch.Text == "Tìm kiếm người dùng...")
+            if (txtSearch.Text == "Tìm kiếm học viên...")
             {
                 txtSearch.Text = "";
                 txtSearch.ForeColor = Color.Black;
@@ -135,9 +160,22 @@ namespace StudyProcessManagement.Views.Admin.Student.StudentManagement
         {
             if (string.IsNullOrWhiteSpace(txtSearch.Text))
             {
-                txtSearch.Text = "Tìm kiếm người dùng...";
+                txtSearch.Text = "Tìm kiếm học viên...";
                 txtSearch.ForeColor = Color.Gray;
             }
+        }
+
+        private void btnExportExcel_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Tính năng đang phát triển...");
+        }
+
+        // Chuyển trang sang Teacher (nếu cần)
+        private void btnMenuTeachers_Click(object sender, EventArgs e)
+        {
+            var teacher = new TeacherMangement();
+            this.Hide();
+            teacher.Show();
         }
     }
 }

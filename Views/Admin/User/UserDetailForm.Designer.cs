@@ -286,7 +286,6 @@
         private System.Windows.Forms.TextBox txtEmail;
         private System.Windows.Forms.Label lblEmail;
         private System.Windows.Forms.CheckBox chkActive;
-        private System.Windows.Forms.ComboBox cboRole;
         private System.Windows.Forms.Label lblRole;
         private System.Windows.Forms.GroupBox gbProfile;
         private System.Windows.Forms.TextBox txtAddress;
@@ -299,5 +298,6 @@
         private System.Windows.Forms.Label lblName;
         private System.Windows.Forms.Button btnSave;
         private System.Windows.Forms.Button btnCancel;
+        public System.Windows.Forms.ComboBox cboRole;
     }
 }

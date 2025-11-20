@@ -178,5 +178,16 @@ namespace StudyProcessManagement.Views.Admin.User
         {
             LoadUserData();
         }
+
+        private void txtSearch_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                LoadUserData();
+                e.SuppressKeyPress = true;
+                e.Handled = true;
+            }
+          
+        }
     }
 }

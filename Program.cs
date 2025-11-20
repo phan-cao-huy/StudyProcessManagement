@@ -3,6 +3,8 @@ using System.Windows.Forms;
 using StudyProcessManagement.Views;
 using StudyProcessManagement.Views.Admin;
 using StudyProcessManagement.Views.Admin.Dashboard;
+using StudyProcessManagement.Views.Admin.Student.StudentManagement;
+using StudyProcessManagement.Views.Admin.Teacher.TeacherMangement;
 using StudyProcessManagement.Views.Admin.User;
 using StudyProcessManagement.Views.Login;
 using StudyProcessManagement.Views.Teacher;
@@ -21,7 +23,7 @@ namespace StudyProcessManagement
             Application.SetCompatibleTextRenderingDefault(false);
 
         
-            Application.Run(new UserManagement());
+            Application.Run(new StudentManagement());
         }
     }
 }

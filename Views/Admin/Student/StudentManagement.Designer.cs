@@ -89,6 +89,7 @@
             this.dataGridViewUsers.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.dataGridViewUsers.Size = new System.Drawing.Size(1306, 476);
             this.dataGridViewUsers.TabIndex = 2;
+            this.dataGridViewUsers.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridViewUsers_CellContentClick);
             // 
             // colId
             // 
@@ -178,11 +179,12 @@
             // 
             this.lblSearchIcon.AutoSize = true;
             this.lblSearchIcon.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.lblSearchIcon.Location = new System.Drawing.Point(23, 23);
+            this.lblSearchIcon.Location = new System.Drawing.Point(356, 24);
             this.lblSearchIcon.Name = "lblSearchIcon";
             this.lblSearchIcon.Size = new System.Drawing.Size(39, 28);
             this.lblSearchIcon.TabIndex = 0;
             this.lblSearchIcon.Text = "🔍";
+            this.lblSearchIcon.Click += new System.EventHandler(this.lblSearchIcon_Click);
             // 
             // txtSearch
             // 
@@ -193,6 +195,7 @@
             this.txtSearch.Size = new System.Drawing.Size(300, 30);
             this.txtSearch.TabIndex = 0;
             this.txtSearch.Text = "Tìm kiếm người dùng...";
+            this.txtSearch.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtSearch_KeyDown);
             // 
             // btnExportExcel
             // 
@@ -223,6 +226,7 @@
             this.btnAddUser.TabIndex = 1;
             this.btnAddUser.Text = "➕ Thêm người dùng";
             this.btnAddUser.UseVisualStyleBackColor = false;
+            this.btnAddUser.Click += new System.EventHandler(this.btnAddUser_Click);
             // 
             // panelTopbar
             // 
