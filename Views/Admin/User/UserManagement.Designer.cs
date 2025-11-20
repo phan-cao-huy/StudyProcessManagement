@@ -197,6 +197,7 @@ namespace StudyProcessManagement.Views.Admin.User
             this.txtSearch.TabIndex = 0;
             this.txtSearch.Text = "Tìm kiếm người dùng...";
             this.txtSearch.TextChanged += new System.EventHandler(this.txtSearch_Enter);
+            this.txtSearch.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtSearch_KeyDown);
             // 
             // btnExportExcel
             // 
