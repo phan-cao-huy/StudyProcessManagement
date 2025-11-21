@@ -1,7 +1,7 @@
-﻿using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Protocols; // <--- Giữ lại (Từ teacher-final)
 using System;
 using System.Collections.Generic;
-using System.Configuration;
+using System.Configuration; // <--- Giữ lại (Từ teacher-final)
 using System.Data;
 using System.Data.SqlClient;
 
@@ -9,6 +9,7 @@ namespace StudyProcessManagement.Business
 {
     public class DataProcess
     {
+        // ✅ GIỮ BẢN TỪ App.config (Teacher-final) để lấy chuỗi kết nối từ file cấu hình
         private string ConnectString = ConfigurationManager.ConnectionStrings["StudyProcessConnection"].ConnectionString;
         private SqlConnection sqlConnect = null;
 
@@ -34,6 +35,7 @@ namespace StudyProcessManagement.Business
             }
         }
 
+        // ✅ READ DATA (Lấy từ cả hai bên, logic đã thống nhất)
         public DataTable ReadData(string sql)
         {
             DataTable dt = new DataTable();
@@ -56,6 +58,7 @@ namespace StudyProcessManagement.Business
             return dt;
         }
 
+        // ✅ READ DATA VỚI PARAMETERS (Gộp logic của cả hai bên)
         public DataTable ReadData(string sql, Dictionary<string, object> parameters)
         {
             DataTable dt = new DataTable();
@@ -68,7 +71,8 @@ namespace StudyProcessManagement.Business
                     {
                         foreach (var param in parameters)
                         {
-                            cmd.Parameters.AddWithValue(param.Key, param.Value);
+                            // Dùng logic cũ của teacher-final, thêm DBNull.Value (từ master)
+                            cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
                         }
                     }
                     using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
@@ -88,6 +92,7 @@ namespace StudyProcessManagement.Business
             return dt;
         }
 
+        // ❌ BỎ UpdateData/ChangeData của master, giữ ChangeData của teacher-final và đặt UpdateData làm Alias
         public bool ChangeData(string sql, Dictionary<string, object> parameters)
         {
             try
@@ -99,7 +104,7 @@ namespace StudyProcessManagement.Business
                     {
                         foreach (var param in parameters)
                         {
-                            cmd.Parameters.AddWithValue(param.Key, param.Value);
+                            cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value); // Thêm DBNull từ master
                         }
                     }
                     cmd.ExecuteNonQuery();
@@ -122,7 +127,7 @@ namespace StudyProcessManagement.Business
             return ChangeData(sql, parameters);
         }
 
-        // ✅ Method mới cho StoredProcedure
+        // ✅ Method mới cho StoredProcedure (Lấy từ teacher-final)
         public DataTable ExecuteStoredProcedure(string spName, Dictionary<string, object> parameters)
         {
             DataTable dt = new DataTable();
@@ -136,7 +141,7 @@ namespace StudyProcessManagement.Business
                     {
                         foreach (var param in parameters)
                         {
-                            cmd.Parameters.AddWithValue(param.Key, param.Value);
+                            cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value); // Thêm DBNull từ master
                         }
                     }
                     using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
