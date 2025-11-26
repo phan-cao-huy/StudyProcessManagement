@@ -80,7 +80,6 @@
             // 
             // btnMenuUsers
             // 
-            this.btnMenuUsers.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
             this.btnMenuUsers.Location = new System.Drawing.Point(13, 42);
             this.btnMenuUsers.Name = "btnMenuUsers";
             this.btnMenuUsers.Size = new System.Drawing.Size(75, 23);
