@@ -1,9 +1,10 @@
+using ClosedXML.Excel;
+using StudyProcessManagement.Business.Teacher;
 using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
-using StudyProcessManagement.Business.Teacher;   // THÊM
 
 
 namespace StudyProcessManagement.Views.Teacher.Controls
@@ -13,8 +14,10 @@ namespace StudyProcessManagement.Views.Teacher.Controls
         // ============================================
         // PRIVATE FIELDS
         // ============================================
+        private StudentListFormService studentListService;
         private Panel headerPanel;
         private Label lblTitle;
+        private Button btnExportExcel;
         private Label lblBreadcrumb;
         private Panel filterPanel;
         private ComboBox cboCourse;
@@ -46,6 +49,7 @@ namespace StudyProcessManagement.Views.Teacher.Controls
 
             gradingService = new GradingService();
             studentService = new StudentService();
+            studentListService = new StudentListFormService();
 
             if (!DesignMode)
             {
@@ -64,6 +68,22 @@ namespace StudyProcessManagement.Views.Teacher.Controls
             this.filterPanel = new System.Windows.Forms.Panel();
             this.cboCourse = new System.Windows.Forms.ComboBox();
             this.cboStatus = new System.Windows.Forms.ComboBox();
+            // btnExportExcel - NÚT XUẤT EXCEL
+            this.btnExportExcel = new System.Windows.Forms.Button();
+            this.btnExportExcel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnExportExcel.BackColor = System.Drawing.Color.FromArgb(34, 139, 34);
+            this.btnExportExcel.FlatAppearance.BorderSize = 0;
+            this.btnExportExcel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnExportExcel.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnExportExcel.ForeColor = System.Drawing.Color.White;
+            this.btnExportExcel.Location = new System.Drawing.Point(830, 15);
+            this.btnExportExcel.Name = "btnExportExcel";
+            this.btnExportExcel.Size = new System.Drawing.Size(140, 35);
+            this.btnExportExcel.TabIndex = 2;
+            this.btnExportExcel.Text = "📊 Xuất Excel";
+            this.btnExportExcel.UseVisualStyleBackColor = false;
+            this.btnExportExcel.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnExportExcel.Click += new System.EventHandler(this.btnExportExcel_Click);
             this.summaryPanel = new System.Windows.Forms.Panel();
             this.lblSummaryTitle = new System.Windows.Forms.Label();
             this.lblSummaryCount = new System.Windows.Forms.Label();
@@ -104,7 +124,7 @@ namespace StudyProcessManagement.Views.Teacher.Controls
             this.lblTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(48)))));
             this.lblTitle.Location = new System.Drawing.Point(30, 20);
             this.lblTitle.Name = "lblTitle";
-            this.lblTitle.Size = new System.Drawing.Size(264, 32);
+            this.lblTitle.Size = new System.Drawing.Size(256, 32);
             this.lblTitle.TabIndex = 0;
             this.lblTitle.Text = "Chấm điểm & Phản hồi";
             // 
@@ -115,7 +135,7 @@ namespace StudyProcessManagement.Views.Teacher.Controls
             this.lblBreadcrumb.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(117)))), ((int)(((byte)(117)))), ((int)(((byte)(117)))));
             this.lblBreadcrumb.Location = new System.Drawing.Point(33, 60);
             this.lblBreadcrumb.Name = "lblBreadcrumb";
-            this.lblBreadcrumb.Size = new System.Drawing.Size(246, 15);
+            this.lblBreadcrumb.Size = new System.Drawing.Size(260, 15);
             this.lblBreadcrumb.TabIndex = 1;
             this.lblBreadcrumb.Text = "Trang chủ  >  Chấm điểm  >  Danh sách bài nộp";
             // 
@@ -123,6 +143,7 @@ namespace StudyProcessManagement.Views.Teacher.Controls
             // 
             this.filterPanel.BackColor = System.Drawing.Color.White;
             this.filterPanel.Controls.Add(this.cboCourse);
+            this.filterPanel.Controls.Add(this.btnExportExcel);
             this.filterPanel.Controls.Add(this.cboStatus);
             this.filterPanel.Dock = System.Windows.Forms.DockStyle.Top;
             this.filterPanel.Location = new System.Drawing.Point(0, 100);
@@ -155,7 +176,7 @@ namespace StudyProcessManagement.Views.Teacher.Controls
             // 
             // summaryPanel
             // 
-            this.summaryPanel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(152)))), ((int)(((byte)(0)))));
+            this.summaryPanel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(192)))), ((int)(((byte)(128)))));
             this.summaryPanel.Controls.Add(this.lblSummaryTitle);
             this.summaryPanel.Controls.Add(this.lblSummaryCount);
             this.summaryPanel.Dock = System.Windows.Forms.DockStyle.Top;
@@ -172,7 +193,7 @@ namespace StudyProcessManagement.Views.Teacher.Controls
             this.lblSummaryTitle.ForeColor = System.Drawing.Color.White;
             this.lblSummaryTitle.Location = new System.Drawing.Point(30, 20);
             this.lblSummaryTitle.Name = "lblSummaryTitle";
-            this.lblSummaryTitle.Size = new System.Drawing.Size(150, 20);
+            this.lblSummaryTitle.Size = new System.Drawing.Size(146, 20);
             this.lblSummaryTitle.TabIndex = 0;
             this.lblSummaryTitle.Text = "Bài nộp chưa chấm:";
             // 
@@ -203,6 +224,7 @@ namespace StudyProcessManagement.Views.Teacher.Controls
             this.dgvSubmissions.AllowUserToAddRows = false;
             this.dgvSubmissions.AllowUserToDeleteRows = false;
             this.dgvSubmissions.AllowUserToResizeRows = false;
+            this.dgvSubmissions.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
             this.dgvSubmissions.BackgroundColor = System.Drawing.Color.White;
             this.dgvSubmissions.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.dgvSubmissions.CellBorderStyle = System.Windows.Forms.DataGridViewCellBorderStyle.SingleHorizontal;
@@ -247,69 +269,60 @@ namespace StudyProcessManagement.Views.Teacher.Controls
             this.dgvSubmissions.RowsDefaultCellStyle = dataGridViewCellStyle3;
             this.dgvSubmissions.RowTemplate.Height = 50;
             this.dgvSubmissions.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvSubmissions.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             this.dgvSubmissions.Size = new System.Drawing.Size(940, 410);
             this.dgvSubmissions.TabIndex = 0;
             this.dgvSubmissions.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvSubmissions_CellClick);
-            this.dgvSubmissions.CellPainting += new System.Windows.Forms.DataGridViewCellPaintingEventHandler(this.dgvSubmissions_CellPainting);
-            this.dgvSubmissions.CellMouseMove += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.dgvSubmissions_CellMouseMove);
             this.dgvSubmissions.CellMouseLeave += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvSubmissions_CellMouseLeave);
+            this.dgvSubmissions.CellMouseMove += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.dgvSubmissions_CellMouseMove);
+            this.dgvSubmissions.CellPainting += new System.Windows.Forms.DataGridViewCellPaintingEventHandler(this.dgvSubmissions_CellPainting);
             // 
             // colStudent
             // 
             this.colStudent.HeaderText = "Học viên";
             this.colStudent.Name = "colStudent";
             this.colStudent.ReadOnly = true;
-            this.colStudent.Width = 150;
             // 
             // colAssignment
             // 
             this.colAssignment.HeaderText = "Bài tập";
             this.colAssignment.Name = "colAssignment";
             this.colAssignment.ReadOnly = true;
-            this.colAssignment.Width = 200;
             // 
             // colCourse
             // 
             this.colCourse.HeaderText = "Khóa học";
             this.colCourse.Name = "colCourse";
             this.colCourse.ReadOnly = true;
-            this.colCourse.Width = 150;
             // 
             // colSubmitDate
             // 
             this.colSubmitDate.HeaderText = "Ngày nộp";
             this.colSubmitDate.Name = "colSubmitDate";
             this.colSubmitDate.ReadOnly = true;
-            this.colSubmitDate.Width = 110;
             // 
             // colDueDate
             // 
             this.colDueDate.HeaderText = "Hạn nộp";
             this.colDueDate.Name = "colDueDate";
             this.colDueDate.ReadOnly = true;
-            this.colDueDate.Width = 110;
             // 
             // colStatus
             // 
             this.colStatus.HeaderText = "Trạng thái";
             this.colStatus.Name = "colStatus";
             this.colStatus.ReadOnly = true;
-            this.colStatus.Width = 110;
             // 
             // colScore
             // 
             this.colScore.HeaderText = "Điểm";
             this.colScore.Name = "colScore";
             this.colScore.ReadOnly = true;
-            this.colScore.Width = 70;
             // 
             // colAction
             // 
             this.colAction.HeaderText = "Thao tác";
             this.colAction.Name = "colAction";
             this.colAction.ReadOnly = true;
-            this.colAction.Width = 120;
             // 
             // colSubmissionID
             // 
@@ -433,6 +446,178 @@ namespace StudyProcessManagement.Views.Teacher.Controls
             }
         }
 
+        private void btnExportExcel_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // Kiểm tra đã chọn khóa học chưa
+                if (!(cboCourse.SelectedItem is CourseItem selectedCourse) || string.IsNullOrEmpty(selectedCourse.CourseID))
+                {
+                    MessageBox.Show("Vui lòng chọn một khóa học cụ thể để xuất Excel!",
+                        "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    cboCourse.Focus();
+                    return;
+                }
+
+                string courseName = selectedCourse.CourseName;
+
+                // Lấy toàn bộ bài nộp của khóa học (không lọc theo trạng thái)
+                DataTable dt = gradingService.GetAllSubmissions(currentTeacherID, courseName, null);
+
+                if (dt.Rows.Count == 0)
+                {
+                    MessageBox.Show("Không có dữ liệu bài nộp trong khóa học này!",
+                        "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                SaveFileDialog saveDialog = new SaveFileDialog();
+                saveDialog.Filter = "Excel Files|*.xlsx";
+                saveDialog.Title = "Xuất danh sách điểm";
+                saveDialog.FileName = $"DiemLop_{courseName.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+
+                if (saveDialog.ShowDialog() == DialogResult.OK)
+                {
+                    using (var workbook = new XLWorkbook())
+                    {
+                        var worksheet = workbook.Worksheets.Add("Danh sách điểm");
+
+                        // TIÊU ĐỀ: LỚP + TÊN KHÓA HỌC
+                        worksheet.Cell(1, 1).Value = $"LỚP: {courseName.ToUpper()}";
+                        worksheet.Range("A1:F1").Merge();
+                        worksheet.Cell(1, 1).Style.Font.Bold = true;
+                        worksheet.Cell(1, 1).Style.Font.FontSize = 18;
+                        worksheet.Cell(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                        worksheet.Cell(1, 1).Style.Font.FontColor = XLColor.FromHtml("#1F4E79");
+
+                        // Ngày xuất
+                        worksheet.Cell(2, 1).Value = $"Ngày xuất: {DateTime.Now:dd/MM/yyyy HH:mm}";
+                        worksheet.Range("A2:F2").Merge();
+                        worksheet.Cell(2, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                        worksheet.Cell(2, 1).Style.Font.Italic = true;
+
+                        // HEADER: Mã SV, Họ và tên, Email, Ngày nộp, Trạng thái, Điểm
+                        int headerRow = 4;
+                        string[] headers = { "Mã SV", "Họ và tên", "Email", "Ngày nộp", "Trạng thái", "Điểm" };
+                        for (int i = 0; i < headers.Length; i++)
+                        {
+                            var cell = worksheet.Cell(headerRow, i + 1);
+                            cell.Value = headers[i];
+                            cell.Style.Font.Bold = true;
+                            cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#4472C4");
+                            cell.Style.Font.FontColor = XLColor.White;
+                            cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                            cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                        }
+
+                        // DỮ LIỆU
+                        int dataRow = headerRow + 1;
+                        int gradedCount = 0, pendingCount = 0, lateCount = 0;
+
+                        foreach (DataRow row in dt.Rows)
+                        {
+                            string status = row["Status"].ToString();
+
+                            // Đếm thống kê
+                            if (status == "Đã chấm") gradedCount++;
+                            else if (status == "Chưa chấm") pendingCount++;
+                            else if (status == "Nộp trễ") lateCount++;
+
+                            // Mã SV (SubmissionID tạm thời, hoặc bạn có thể thêm cột StudentID vào query)
+                            worksheet.Cell(dataRow, 1).Value = row["SubmissionID"].ToString();
+                            worksheet.Cell(dataRow, 1).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+                            // Họ và tên
+                            worksheet.Cell(dataRow, 2).Value = row["StudentName"].ToString();
+                            worksheet.Cell(dataRow, 2).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+                            // Email (cần thêm vào query nếu muốn, tạm thời để trống)
+                            worksheet.Cell(dataRow, 3).Value = row["Email"].ToString();
+                            worksheet.Cell(dataRow, 3).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+                            // Ngày nộp
+                            string submitDate = "";
+                            if (row["SubmissionDate"] != DBNull.Value)
+                            {
+                                submitDate = Convert.ToDateTime(row["SubmissionDate"]).ToString("dd/MM/yyyy");
+                            }
+                            worksheet.Cell(dataRow, 4).Value = submitDate;
+                            worksheet.Cell(dataRow, 4).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                            worksheet.Cell(dataRow, 4).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                            // Trạng thái (Đã chấm, Chưa chấm, Nộp trễ)
+                            var cellStatus = worksheet.Cell(dataRow, 5);
+                            cellStatus.Value = status;
+                            cellStatus.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                            cellStatus.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                            // Tô màu trạng thái
+                            switch (status)
+                            {
+                                case "Chưa chấm":
+                                    cellStatus.Style.Font.FontColor = XLColor.FromHtml("#FF9800"); // Cam
+                                    break;
+                                case "Đã chấm":
+                                    cellStatus.Style.Font.FontColor = XLColor.FromHtml("#4CAF50"); // Xanh lá
+                                    break;
+                                case "Nộp trễ":
+                                    cellStatus.Style.Font.FontColor = XLColor.FromHtml("#F44336"); // Đỏ
+                                    break;
+                            }
+
+                            // Điểm - để trống nếu chưa chấm
+                            var cellScore = worksheet.Cell(dataRow, 6);
+                            if (status == "Đã chấm" && row["Score"] != DBNull.Value)
+                            {
+                                cellScore.Value = row["Score"].ToString();
+                                cellScore.Style.Font.Bold = true;
+                            }
+                            else
+                            {
+                                cellScore.Value = ""; // Để trống nếu chưa chấm
+                            }
+                            cellScore.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                            cellScore.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                            dataRow++;
+                        }
+
+                        // THỐNG KÊ
+                        int statsRow = dataRow + 2;
+                        worksheet.Cell(statsRow, 1).Value = $"Tổng số bài nộp: {dt.Rows.Count}";
+                        worksheet.Cell(statsRow, 1).Style.Font.Bold = true;
+                        worksheet.Cell(statsRow + 1, 1).Value = $"Đã chấm: {gradedCount} | Chưa chấm: {pendingCount} | Nộp trễ: {lateCount}";
+                        worksheet.Cell(statsRow + 1, 1).Style.Font.Italic = true;
+
+                        // Auto-fit
+                        worksheet.Columns().AdjustToContents();
+                        worksheet.Column(1).Width = 10;
+                        worksheet.Column(2).Width = 20;
+                        worksheet.Column(3).Width = 25;
+                        worksheet.Column(4).Width = 12;
+                        worksheet.Column(5).Width = 12;
+                        worksheet.Column(6).Width = 10;
+
+                        workbook.SaveAs(saveDialog.FileName);
+                    }
+
+                    MessageBox.Show("Xuất Excel thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                    if (MessageBox.Show("Bạn có muốn mở file?", "Xác nhận", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = saveDialog.FileName,
+                            UseShellExecute = true
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi xuất Excel: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
 
 
         // ============================================
