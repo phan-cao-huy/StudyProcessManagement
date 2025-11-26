@@ -22,6 +22,8 @@ namespace StudyProcessManagement.Views.Teacher.Controls
         private Panel detailPanel;
         private Label lblDetailTitle;
         private Label lblLessonName;
+        private Label lblCurrentSection;
+        private TextBox txtCurrentSectionName;
         private TextBox txtLessonName;
         private Label lblLessonDesc;
         private RichTextBox txtLessonDescription;
@@ -91,6 +93,24 @@ namespace StudyProcessManagement.Views.Teacher.Controls
             this.detailPanel = new System.Windows.Forms.Panel();
             this.lblDetailTitle = new System.Windows.Forms.Label();
             this.lblLessonName = new System.Windows.Forms.Label();
+            //label Current Section
+            this.lblCurrentSection = new Label();
+            this.lblCurrentSection.AutoSize = true;
+            this.lblCurrentSection.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            this.lblCurrentSection.ForeColor = Color.FromArgb(60, 60, 60);
+            this.lblCurrentSection.Location = new Point(25, 60); // Đặt vị trí trên Tên bài học
+            this.lblCurrentSection.Name = "lblCurrentSection";
+            this.lblCurrentSection.Size = new Size(180, 19);
+            this.lblCurrentSection.Text = "Chương hiện tại: ";
+            // txt Current Section
+            this.txtCurrentSectionName = new System.Windows.Forms.TextBox();
+            this.txtCurrentSectionName.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            this.txtCurrentSectionName.ForeColor = Color.FromArgb(60, 60, 60);
+            this.txtCurrentSectionName.Location = new Point(150, 57); // Ngay sau label
+            this.txtCurrentSectionName.Name = "txtCurrentSectionName";
+            this.txtCurrentSectionName.Size = new Size(320, 25);
+            this.txtCurrentSectionName.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+
             this.txtLessonName = new System.Windows.Forms.TextBox();
             this.lblLessonDesc = new System.Windows.Forms.Label();
             this.txtLessonDescription = new System.Windows.Forms.RichTextBox();
@@ -192,6 +212,8 @@ namespace StudyProcessManagement.Views.Teacher.Controls
             // 
             this.detailPanel.BackColor = System.Drawing.Color.White;
             this.detailPanel.Controls.Add(this.lblDetailTitle);
+            this.detailPanel.Controls.Add(this.lblCurrentSection);
+            this.detailPanel.Controls.Add(this.txtCurrentSectionName);
             this.detailPanel.Controls.Add(this.lblLessonName);
             this.detailPanel.Controls.Add(this.txtLessonName);
             this.detailPanel.Controls.Add(this.lblLessonDesc);
@@ -520,12 +542,15 @@ namespace StudyProcessManagement.Views.Teacher.Controls
             if (type == "Section")
             {
                 selectedSectionID = id;
-                selectedLessonID = "";
+                selectedLessonID = null;
                 ClearLessonForm();
+                txtCurrentSectionName.Text = e.Node.Text;
             }
             else if (type == "Lesson")
             {
                 LoadLessonDetails(id);
+                if (e.Node.Parent != null)
+                    txtCurrentSectionName.Text = e.Node.Parent.Text;
             }
         }
 
@@ -559,30 +584,30 @@ namespace StudyProcessManagement.Views.Teacher.Controls
         {
             if (string.IsNullOrEmpty(selectedCourseID))
             {
-                MessageBox.Show("Vui lòng chọn khóa học trước!", "Thông báo",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Vui lòng chọn khoá học trước!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-
-            string sectionTitle = Microsoft.VisualBasic.Interaction.InputBox(
-                "Nhập tên chương mới:", "Thêm chương", "", -1, -1);
-
+            string sectionTitle = Microsoft.VisualBasic.Interaction.InputBox("Nhập tên chương mới:", "Thêm chương", "", -1, -1);
             if (string.IsNullOrWhiteSpace(sectionTitle)) return;
+
+            var confirm = MessageBox.Show("Bạn có chắc chắn muốn thêm chương mới?",
+                                      "Xác nhận",
+                                      MessageBoxButtons.YesNo,
+                                      MessageBoxIcon.Question);
+            if (confirm == DialogResult.No) return;
 
             try
             {
-                // ✅ Gọi Service
                 courseContentService.AddSection(selectedCourseID, sectionTitle);
-                MessageBox.Show("Thêm chương thành công!", "Thành công",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Thêm chương thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 LoadCourseStructure(selectedCourseID);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Lỗi khi thêm chương: " + ex.Message, "Lỗi",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Lỗi khi thêm chương: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
 
         private void BtnAddLesson_Click(object sender, EventArgs e)
         {
@@ -600,25 +625,64 @@ namespace StudyProcessManagement.Views.Teacher.Controls
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
+            // --- Khi chỉ sửa tên chương ---
+            if (string.IsNullOrWhiteSpace(txtLessonName.Text))
+            {
+                // Xác nhận trước khi cập nhật tên chương
+                var confirm = MessageBox.Show("Bạn có chắc chắn muốn thay đổi tên chương này?",
+                                              "Xác nhận",
+                                              MessageBoxButtons.YesNo,
+                                              MessageBoxIcon.Question);
+                if (confirm == DialogResult.No) return;
+
+                if (!string.IsNullOrEmpty(selectedSectionID))
+                {
+                    string newSectionName = txtCurrentSectionName.Text?.Trim();
+                    if (string.IsNullOrWhiteSpace(newSectionName))
+                    {
+                        MessageBox.Show("Tên chương không được để trống!", "Thông báo",
+                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        txtCurrentSectionName.Focus();
+                        return;
+                    }
+                    bool updated = courseContentService.UpdateSectionName(selectedSectionID, newSectionName);
+                    if (updated)
+                    {
+                        MessageBox.Show("Cập nhật tên chương thành công!", "Thành công",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        LoadCourseStructure(selectedCourseID);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Lỗi cập nhật tên chương!", "Lỗi",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+                return; // Thoát hàm, không validate gì thêm
+            }
+
+            // --- Khi có tên bài học (thêm/sửa bài học) ---
+            var confirmSaveLesson = MessageBox.Show("Bạn có chắc chắn muốn lưu bài học này?",
+                                                    "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (confirmSaveLesson == DialogResult.No) return;
+
             if (string.IsNullOrWhiteSpace(txtLessonName.Text))
             {
                 MessageBox.Show("Vui lòng nhập tên bài học!", "Thông báo",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtLessonName.Focus();
                 return;
             }
-
             if (string.IsNullOrEmpty(selectedSectionID))
             {
                 MessageBox.Show("Vui lòng chọn chương!", "Thông báo",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-
             try
             {
                 if (isEditingLesson && !string.IsNullOrEmpty(selectedLessonID))
                 {
-                    // ✅ Update existing lesson
                     courseContentService.UpdateLesson(
                         selectedLessonID,
                         txtLessonName.Text,
@@ -631,7 +695,6 @@ namespace StudyProcessManagement.Views.Teacher.Controls
                 }
                 else
                 {
-                    // ✅ Insert new lesson
                     courseContentService.AddLesson(
                         selectedCourseID,
                         selectedSectionID,
@@ -643,7 +706,6 @@ namespace StudyProcessManagement.Views.Teacher.Controls
                     MessageBox.Show("Thêm bài học thành công!", "Thành công",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
-
                 LoadCourseStructure(selectedCourseID);
                 ClearLessonForm();
             }
@@ -654,8 +716,12 @@ namespace StudyProcessManagement.Views.Teacher.Controls
             }
         }
 
+
+
+
         private void BtnDelete_Click(object sender, EventArgs e)
         {
+            // Kiểm tra đã chọn node chưa
             if (tvContent.SelectedNode == null || tvContent.SelectedNode.Tag == null)
             {
                 MessageBox.Show("Vui lòng chọn mục cần xóa!", "Thông báo",
@@ -667,6 +733,7 @@ namespace StudyProcessManagement.Views.Teacher.Controls
             string type = nodeData.Type;
             string id = nodeData.ID;
 
+            // Xác nhận trước khi xóa
             DialogResult result = MessageBox.Show(
                 $"Bạn có chắc chắn muốn xóa {(type == "Section" ? "chương" : "bài học")} này?",
                 "Xác nhận xóa",
@@ -679,17 +746,27 @@ namespace StudyProcessManagement.Views.Teacher.Controls
             {
                 if (type == "Section")
                 {
-                    // ✅ Gọi Service xóa Section
-                    courseContentService.DeleteSection(id);
+                    // Gọi Service xóa Section
+                    bool ok = courseContentService.DeleteSection(id);
+                    if (ok)
+                        MessageBox.Show("Đã xóa chương thành công!", "Thành công",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    else
+                        MessageBox.Show("Xóa chương thất bại!", "Lỗi",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 else if (type == "Lesson")
                 {
-                    // ✅ Gọi Service xóa Lesson
-                    courseContentService.DeleteLesson(id);
+                    // Gọi Service xóa Lesson
+                    bool ok = courseContentService.DeleteLesson(id);
+                    if (ok)
+                        MessageBox.Show("Đã xóa bài học thành công!", "Thành công",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    else
+                        MessageBox.Show("Xóa bài học thất bại!", "Lỗi",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
 
-                MessageBox.Show("Xóa thành công!", "Thành công",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
                 LoadCourseStructure(selectedCourseID);
                 ClearLessonForm();
             }
@@ -699,6 +776,7 @@ namespace StudyProcessManagement.Views.Teacher.Controls
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
 
         private void TxtMaterials_Click(object sender, EventArgs e)
         {

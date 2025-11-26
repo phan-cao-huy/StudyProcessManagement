@@ -85,9 +85,23 @@ namespace StudyProcessManagement.Views.Teacher.Forms
 
             if (string.IsNullOrEmpty(title))
             {
-                MessageBox.Show("Tên bài tập không được để trống!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Tên bài tập không được trống!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+
+            // ----------- Validate xác nhận ----------
+            DialogResult confirm;
+            if (isEditMode)
+            {
+                confirm = MessageBox.Show("Bạn có chắc chắn muốn sửa bài tập?", "Xác nhận sửa", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            }
+            else
+            {
+                confirm = MessageBox.Show("Bạn có chắc chắn muốn tạo bài tập mới?", "Xác nhận tạo", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            }
+            if (confirm == DialogResult.No)
+                return;
+            // ----------- Hết validate xác nhận -------
 
             try
             {
@@ -100,10 +114,9 @@ namespace StudyProcessManagement.Views.Teacher.Forms
                 }
                 else
                 {
-                    assignmentFormService.CreateAssignment(
+                    result = assignmentFormService.CreateAssignment(
                         courseID, title, description, assignedDate, dueDate, maxScore, attachmentPath
-                    );
-                    result = true;
+                    ) >0;
                 }
 
                 if (result)
@@ -122,6 +135,7 @@ namespace StudyProcessManagement.Views.Teacher.Forms
                 MessageBox.Show("Lỗi: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
