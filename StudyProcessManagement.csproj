@@ -399,7 +399,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Data1\" />
+    <Folder Include="Data\" />
     <Folder Include="Resource\submit\" />
   </ItemGroup>
   <ItemGroup>
