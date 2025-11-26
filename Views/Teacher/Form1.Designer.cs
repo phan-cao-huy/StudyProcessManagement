@@ -1,4 +1,4 @@
-﻿namespace StudyProcessManagement.Views.Teacher
+namespace StudyProcessManagement.Views.Teacher
 {
     partial class Form1
     {
@@ -35,8 +35,8 @@
             this.btnAssignments = new System.Windows.Forms.Button();
             this.btnGrading = new System.Windows.Forms.Button();
             this.btnStudents = new System.Windows.Forms.Button();
-            this.btnLogout = new System.Windows.Forms.Button();
             this.lblSidebarHeader = new System.Windows.Forms.Label();
+            this.btnLogout = new System.Windows.Forms.Button();
             this.panelContent = new System.Windows.Forms.Panel();
             this.panelSidebar.SuspendLayout();
             this.flowLayoutPanelMenu.SuspendLayout();
@@ -178,6 +178,19 @@
             this.btnStudents.UseVisualStyleBackColor = true;
             this.btnStudents.Click += new System.EventHandler(this.btnStudents_Click);
             // 
+            // lblSidebarHeader
+            // 
+            this.lblSidebarHeader.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblSidebarHeader.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
+            this.lblSidebarHeader.ForeColor = System.Drawing.Color.White;
+            this.lblSidebarHeader.Location = new System.Drawing.Point(0, 0);
+            this.lblSidebarHeader.Name = "lblSidebarHeader";
+            this.lblSidebarHeader.Padding = new System.Windows.Forms.Padding(10);
+            this.lblSidebarHeader.Size = new System.Drawing.Size(272, 60);
+            this.lblSidebarHeader.TabIndex = 3;
+            this.lblSidebarHeader.Text = "📚 LMS Teacher";
+            this.lblSidebarHeader.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
             // btnLogout
             // 
             this.btnLogout.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
@@ -196,19 +209,6 @@
             this.btnLogout.Click += new System.EventHandler(this.btnLogout_Click);
             this.btnLogout.MouseEnter += new System.EventHandler(this.btnLogout_MouseEnter);
             this.btnLogout.MouseLeave += new System.EventHandler(this.btnLogout_MouseLeave);
-            // 
-            // lblSidebarHeader
-            // 
-            this.lblSidebarHeader.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lblSidebarHeader.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.lblSidebarHeader.ForeColor = System.Drawing.Color.White;
-            this.lblSidebarHeader.Location = new System.Drawing.Point(0, 0);
-            this.lblSidebarHeader.Name = "lblSidebarHeader";
-            this.lblSidebarHeader.Padding = new System.Windows.Forms.Padding(10);
-            this.lblSidebarHeader.Size = new System.Drawing.Size(272, 60);
-            this.lblSidebarHeader.TabIndex = 3;
-            this.lblSidebarHeader.Text = "📚 LMS Teacher";
-            this.lblSidebarHeader.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // panelContent
             // 
@@ -231,7 +231,6 @@
             this.panelSidebar.ResumeLayout(false);
             this.flowLayoutPanelMenu.ResumeLayout(false);
             this.ResumeLayout(false);
-
         }
 
         #endregion

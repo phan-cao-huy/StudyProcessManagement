@@ -1,10 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using StudyProcessManagement.Views;
+using StudyProcessManagement.Views.Admin;
+using StudyProcessManagement.Views.Admin.Course;
+using StudyProcessManagement.Views.Admin.Dashboard;
+using StudyProcessManagement.Views.Admin.Student.StudentManagement;
+using StudyProcessManagement.Views.Admin.Teacher.TeacherMangement;
+using StudyProcessManagement.Views.Admin.User;
 using StudyProcessManagement.Views.Login;
 using StudyProcessManagement.Views.Teacher;
+
 namespace StudyProcessManagement
 {
     internal static class Program
@@ -17,8 +22,9 @@ namespace StudyProcessManagement
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            // Temporarily run Form1 for testing the new UI instead of Login
-            Application.Run(new Form1());
+
+        
+            Application.Run(new Login());
         }
     }
 }
