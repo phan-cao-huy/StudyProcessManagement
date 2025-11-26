@@ -314,6 +314,77 @@
     <Compile Include="Model\StudentsModel\StudentSession.cs" />
     <Compile Include="Model\StudentsModel\StudentContent.cs" />
     <Compile Include="Model\StudentsModel\StudentCourseViewModel.cs" />
+    <Compile Include="Business\Admin\ContentService.cs" />
+    <Compile Include="Business\Admin\CourseService.cs" />
+    <Compile Include="Business\Admin\DashboardService.cs" />
+    <Compile Include="Business\DataProcess.cs" />
+    <Compile Include="Business\Teacher\AssignmentFormService.cs" />
+    <Compile Include="Business\Teacher\AssignmentService.cs" />
+    <Compile Include="Business\Teacher\CourseContentService.cs" />
+    <Compile Include="Business\Teacher\CourseFormService.cs" />
+    <Compile Include="Business\Teacher\CourseService.cs" />
+    <Compile Include="Business\Teacher\DashboardService.cs" />
+    <Compile Include="Business\Teacher\GradeSubmissionFormService.cs" />
+    <Compile Include="Business\Teacher\GradingService.cs" />
+    <Compile Include="Business\Teacher\StudentListFormService.cs" />
+    <Compile Include="Business\Teacher\StudentService.cs" />
+    <Compile Include="Business\Admin\AccountService.cs" />
+    <Compile Include="Business\Admin\StudentService.cs" />
+    <Compile Include="Business\Admin\TeacherService.cs" />
+    <Compile Include="Business\Admin\UserService.cs" />
+    <Compile Include="StudyProcessDataSet.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>StudyProcessDataSet.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="Models\Assignment.cs" />
+    <Compile Include="Models\Catagory.cs" />
+    <Compile Include="Models\Course.cs" />
+    <Compile Include="Models\Enrollment.cs" />
+    <Compile Include="Models\Submission.cs" />
+    <Compile Include="Models\Users.cs" />
+    <Compile Include="Views\Admin\Course\CourseManagement.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\Admin\Course\CourseManagement.Designer.cs">
+      <DependentUpon>CourseManagement.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Admin\Course\CourseVerificationForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\Admin\Course\CourseVerificationForm.Designer.cs">
+      <DependentUpon>CourseVerificationForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Admin\Dashboard\DashboardForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\Admin\Dashboard\DashboardForm.Designer.cs">
+      <DependentUpon>DashboardForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Admin\Student\StudentManagement.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\Admin\Student\StudentManagement.Designer.cs">
+      <DependentUpon>StudentManagement.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Admin\Teacher\TeacherMangement.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\Admin\Teacher\TeacherMangement.Designer.cs">
+      <DependentUpon>TeacherMangement.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Admin\User\UserDetailForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\Admin\User\UserDetailForm.Designer.cs">
+      <DependentUpon>UserDetailForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Admin\User\UserManagement.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\Admin\User\UserManagement.Designer.cs">
+      <DependentUpon>UserManagement.cs</DependentUpon>
+    </Compile>
     <Compile Include="Views\Login\Login.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -383,7 +454,6 @@
     <EmbeddedResource Include="Views\Student\main\main.resx">
       <DependentUpon>main.cs</DependentUpon>
     </EmbeddedResource>
-    <None Include="packages.config" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
