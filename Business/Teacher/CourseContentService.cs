@@ -55,34 +55,32 @@ namespace StudyProcessManagement.Business.Teacher
         /// <summary>
         /// Thêm Section mới
         /// </summary>
-        public bool AddSection(string courseID, string sectionTitle)
+        public bool AddSection(string courseID, string sectionTitle, string description = "")
         {
             if (string.IsNullOrWhiteSpace(sectionTitle))
-                throw new ArgumentException("Tên chương không được để trống");
+                throw new ArgumentException("Tên chương không được trống!");
 
             try
             {
-                // Get next section order
+                // Lấy thứ tự tiếp theo cho SectionOrder
                 string sqlOrder = "SELECT ISNULL(MAX(SectionOrder), 0) + 1 FROM Sections WHERE CourseID = @CourseID";
-                var paramOrder = new Dictionary<string, object> { { "@CourseID", courseID } };
+                var paramOrder = new Dictionary<string, object>
+        {
+            { "CourseID", courseID }
+        };
                 DataTable dtOrder = dataProcess.ReadData(sqlOrder, paramOrder);
                 int nextOrder = Convert.ToInt32(dtOrder.Rows[0][0]);
 
-                // Generate new SectionID
-                string newSectionID = "SEC" + Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper();
-
-                // Insert new section
-                string sqlInsert = @"
-                    INSERT INTO Sections (SectionID, CourseID, SectionTitle, SectionOrder) 
-                    VALUES (@SectionID, @CourseID, @SectionTitle, @SectionOrder)";
-
+                // Sửa chỗ này: KHÔNG truyền SectionID (do auto tăng)
+                string sqlInsert = "INSERT INTO Sections (CourseID, SectionTitle, SectionOrder, Description, CreatedAt) VALUES (@CourseID, @SectionTitle, @SectionOrder, @Description, @CreatedAt)";
                 var parameters = new Dictionary<string, object>
-                {
-                    { "@SectionID", newSectionID },
-                    { "@CourseID", courseID },
-                    { "@SectionTitle", sectionTitle },
-                    { "@SectionOrder", nextOrder }
-                };
+        {
+            { "CourseID", courseID },
+            { "SectionTitle", sectionTitle },
+            { "SectionOrder", nextOrder },
+            { "Description", description ?? "" },
+            { "CreatedAt", DateTime.Now }
+        };
 
                 return dataProcess.ChangeData(sqlInsert, parameters);
             }
@@ -92,22 +90,26 @@ namespace StudyProcessManagement.Business.Teacher
             }
         }
 
+
+
         /// <summary>
         /// Xóa Section
         /// </summary>
         public bool DeleteSection(string sectionID)
         {
-            if (string.IsNullOrEmpty(sectionID))
-                throw new ArgumentException("ID chương không hợp lệ");
-
-            string sql = "DELETE FROM Sections WHERE SectionID = @SectionID";
+            // Xóa hết bài học thuộc section này trước
+            string sqlDeleteLessons = "DELETE FROM Lessons WHERE SectionID = @SectionID";
             var parameters = new Dictionary<string, object>
-            {
-                { "@SectionID", sectionID }
-            };
+    {
+        { "SectionID", sectionID }
+    };
+            dataProcess.ChangeData(sqlDeleteLessons, parameters);
 
-            return dataProcess.ChangeData(sql, parameters);
+            // Xóa section
+            string sqlDeleteSection = "DELETE FROM Sections WHERE SectionID = @SectionID";
+            return dataProcess.ChangeData(sqlDeleteSection, parameters);
         }
+
 
         // =============================================
         // LESSON OPERATIONS
@@ -149,44 +151,36 @@ namespace StudyProcessManagement.Business.Teacher
         /// <summary>
         /// Thêm Lesson mới
         /// </summary>
-        public bool AddLesson(string courseID, string sectionID, string lessonTitle,
-            string content, string videoUrl, string attachmentUrl)
+        public bool AddLesson(string courseID, string sectionID, string lessonTitle, string content, string videoUrl, string attachmentUrl)
         {
             if (string.IsNullOrWhiteSpace(lessonTitle))
-                throw new ArgumentException("Tên bài học không được để trống");
-
+                throw new ArgumentException("Tên bài học không được trống!");
             if (string.IsNullOrEmpty(sectionID))
-                throw new ArgumentException("Phải chọn chương trước khi thêm bài học");
+                throw new ArgumentException("Phải chọn chương trước khi thêm bài học!");
 
             try
             {
-                // Get next lesson order
+                // Lấy thứ tự tiếp theo cho LessonOrder
                 string sqlOrder = "SELECT ISNULL(MAX(LessonOrder), 0) + 1 FROM Lessons WHERE SectionID = @SectionID";
-                var paramOrder = new Dictionary<string, object> { { "@SectionID", sectionID } };
+                var paramOrder = new Dictionary<string, object>
+        {
+            { "SectionID", sectionID }
+        };
                 DataTable dtOrder = dataProcess.ReadData(sqlOrder, paramOrder);
                 int nextOrder = Convert.ToInt32(dtOrder.Rows[0][0]);
 
-                // Generate new LessonID
-                string newLessonID = "LES" + Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper();
-
-                // Insert new lesson
-                string sqlInsert = @"
-                    INSERT INTO Lessons (LessonID, CourseID, SectionID, LessonTitle, LessonOrder, 
-                                        Content, VideoUrl, AttachmentUrl) 
-                    VALUES (@LessonID, @CourseID, @SectionID, @Title, @Order, 
-                           @Content, @VideoUrl, @Attachment)";
-
+                // KHÔNG truyền LessonID khi insert (auto increment)
+                string sqlInsert = "INSERT INTO Lessons (CourseID, SectionID, LessonTitle, LessonOrder, Content, VideoUrl, AttachmentUrl) VALUES (@CourseID, @SectionID, @LessonTitle, @LessonOrder, @Content, @VideoUrl, @AttachmentUrl)";
                 var parameters = new Dictionary<string, object>
-                {
-                    { "@LessonID", newLessonID },
-                    { "@CourseID", courseID },
-                    { "@SectionID", sectionID },
-                    { "@Title", lessonTitle },
-                    { "@Order", nextOrder },
-                    { "@Content", content ?? "" },
-                    { "@VideoUrl", videoUrl ?? "" },
-                    { "@Attachment", attachmentUrl ?? "" }
-                };
+        {
+            { "CourseID", courseID },
+            { "SectionID", sectionID },
+            { "LessonTitle", lessonTitle },
+            { "LessonOrder", nextOrder },
+            { "Content", content ?? "" },
+            { "VideoUrl", videoUrl ?? "" },
+            { "AttachmentUrl", attachmentUrl ?? "" }
+        };
 
                 return dataProcess.ChangeData(sqlInsert, parameters);
             }
@@ -195,6 +189,7 @@ namespace StudyProcessManagement.Business.Teacher
                 throw new Exception("Lỗi khi thêm bài học: " + ex.Message);
             }
         }
+
 
         /// <summary>
         /// Cập nhật Lesson
@@ -227,10 +222,21 @@ namespace StudyProcessManagement.Business.Teacher
 
             return dataProcess.ChangeData(sql, parameters);
         }
+        public bool UpdateSectionName(string sectionID, string newName)
+        {
+            string sql = "UPDATE Sections SET SectionTitle = @SectionTitle WHERE SectionID = @SectionID";
+            var parameters = new Dictionary<string, object>
+    {
+        { "SectionTitle", newName },
+        { "SectionID", sectionID }
+    };
+            // Trả về true nếu update thành công
+            return dataProcess.ChangeData(sql, parameters);
+        }
 
         /// <summary>
         /// Xóa Lesson
-        /// </summary>
+        /// </summary>  
         public bool DeleteLesson(string lessonID)
         {
             if (string.IsNullOrEmpty(lessonID))
