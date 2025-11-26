@@ -11,7 +11,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static StudyProcessManagement.Data.StudentSession;
-
+using StudyProcessManagement.Business.Student;
 namespace StudyProcessManagement.Views.Student.main
 {
     public partial class main : Form
@@ -121,7 +121,7 @@ namespace StudyProcessManagement.Views.Student.main
 
             string currentUri = webView.CoreWebView2.Source;
             string scriptToSend = null;
-            DataProcess dal = new DataProcess();
+           
 
             // 1. Logic tải Dữ liệu Thông tin Cá nhân
             if (currentUri.Contains("studient-information.html"))
@@ -151,7 +151,7 @@ namespace StudyProcessManagement.Views.Student.main
             }
             // 2. Logic tải Dữ liệu Khóa học
             else if (currentUri.Contains("student-my-courses.html"))
-            {
+            {   CourseService dal = new CourseService();
                 string studentId = this.LoggedInStudent.UserID;
                 List<StudentCourseViewModel> myCourses = dal.GetMyCourses(studentId);
                 string coursesJson = System.Text.Json.JsonSerializer.Serialize(myCourses);
@@ -163,7 +163,7 @@ namespace StudyProcessManagement.Views.Student.main
             }
             // 3. Logic tải Dữ liệu Tài nguyên (Lessons/Assignments)
             else if (currentUri.Contains("student-content.html"))
-            {
+            {   ContentService dal = new ContentService();
                 string studentId = this.LoggedInStudent.UserID;
                 List<StudentContent> studentContentList = dal.GetAllResources(studentId);
                 string contentJson = System.Text.Json.JsonSerializer.Serialize(studentContentList);
@@ -178,7 +178,7 @@ namespace StudyProcessManagement.Views.Student.main
             {
                 // **THÊM DELAY ĐỂ ĐẢM BẢO DOM ĐÃ RESET**
                 await Task.Delay(100);
-
+                ScoreService dal = new ScoreService();
                 string studentId = this.LoggedInStudent.UserID;
                 StudentOverallStats overallStats = dal.GetOverallStats(studentId);
                 List<CourseSummary> courseSummaries = dal.GetCourseSummary(studentId);
@@ -204,6 +204,7 @@ namespace StudyProcessManagement.Views.Student.main
             // 5. Logic tải Dữ liệu Bài tập
             else if (currentUri.Contains("student-assignments.html"))
             {
+                AssignmentService dal = new AssignmentService();
                 string studentId = this.LoggedInStudent.UserID;
                 List<AssignmentViewModel> assignments = dal.GetStudentAssignments(studentId);
 
@@ -359,7 +360,7 @@ namespace StudyProcessManagement.Views.Student.main
             {
                 try
                 {
-                    DataProcess dal = new DataProcess();
+                    AssignmentService dal = new AssignmentService();
                     int submissionId = dal.InsertSubmission(
                         data.AssignmentID,
                         this.LoggedInStudent.UserID,
@@ -390,7 +391,7 @@ namespace StudyProcessManagement.Views.Student.main
         {
             string message = e.TryGetWebMessageAsString();
             string targetRelativePath = null;
-            DataProcess dal = new DataProcess();
+            DataProcessDAL dal = new DataProcessDAL();
 
             // Xử lý các tin nhắn chuỗi đơn giản (Điều hướng Menu)
             if (message == "LOGOUT")
@@ -502,7 +503,7 @@ namespace StudyProcessManagement.Views.Student.main
     }
 }
 
-// Giữ nguyên các lớp này bên ngoài lớp 'main'
+
 public class WebViewMessage
 {
     public string Action { get; set; }
@@ -512,13 +513,11 @@ public class WebViewMessage
 
 public class AssignmentSubmissionData : WebViewMessage
 {
-    // Cần là int để khớp với AssignmentID trong model của bạn
     public new int AssignmentID { get; set; }
     public string FileName { get; set; }
     public string FileBase64 { get; set; } // Chứa nội dung file đã mã hóa Base64
     public string StudentNote { get; set; }
     public string CourseName { get; set; } // Được thêm vào từ JS
 
-    // ⭐ THÊM TRƯỜNG NÀY ĐỂ NHẬN ĐƯỜNG DẪN GỐC TỪ JS ⭐
     public string RootPath { get; set; }
 }
