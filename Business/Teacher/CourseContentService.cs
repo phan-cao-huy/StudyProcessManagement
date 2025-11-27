@@ -39,16 +39,15 @@ namespace StudyProcessManagement.Business.Teacher
         public DataTable GetCourseSections(string courseID)
         {
             string sql = @"
-                SELECT SectionID, SectionTitle, SectionOrder 
-                FROM Sections 
-                WHERE CourseID = @CourseID 
+                SELECT SectionID, SectionTitle, SectionOrder
+                FROM Sections
+                WHERE CourseID = @CourseID
                 ORDER BY SectionOrder";
 
             var parameters = new Dictionary<string, object>
             {
                 { "@CourseID", courseID }
             };
-
             return dataProcess.ReadData(sql, parameters);
         }
 
@@ -65,22 +64,23 @@ namespace StudyProcessManagement.Business.Teacher
                 // Lấy thứ tự tiếp theo cho SectionOrder
                 string sqlOrder = "SELECT ISNULL(MAX(SectionOrder), 0) + 1 FROM Sections WHERE CourseID = @CourseID";
                 var paramOrder = new Dictionary<string, object>
-        {
-            { "CourseID", courseID }
-        };
+                {
+                    { "CourseID", courseID }
+                };
                 DataTable dtOrder = dataProcess.ReadData(sqlOrder, paramOrder);
                 int nextOrder = Convert.ToInt32(dtOrder.Rows[0][0]);
 
-                // Sửa chỗ này: KHÔNG truyền SectionID (do auto tăng)
-                string sqlInsert = "INSERT INTO Sections (CourseID, SectionTitle, SectionOrder, Description, CreatedAt) VALUES (@CourseID, @SectionTitle, @SectionOrder, @Description, @CreatedAt)";
+                string sqlInsert = @"INSERT INTO Sections (CourseID, SectionTitle, SectionOrder, Description, CreatedAt) 
+                                    VALUES (@CourseID, @SectionTitle, @SectionOrder, @Description, @CreatedAt)";
+
                 var parameters = new Dictionary<string, object>
-        {
-            { "CourseID", courseID },
-            { "SectionTitle", sectionTitle },
-            { "SectionOrder", nextOrder },
-            { "Description", description ?? "" },
-            { "CreatedAt", DateTime.Now }
-        };
+                {
+                    { "CourseID", courseID },
+                    { "SectionTitle", sectionTitle },
+                    { "SectionOrder", nextOrder },
+                    { "Description", description ?? "" },
+                    { "CreatedAt", DateTime.Now }
+                };
 
                 return dataProcess.ChangeData(sqlInsert, parameters);
             }
@@ -90,7 +90,23 @@ namespace StudyProcessManagement.Business.Teacher
             }
         }
 
+        /// <summary>
+        /// Cập nhật tên Section - HÀM MỚI THÊM
+        /// </summary>
+        public bool UpdateSectionName(string sectionID, string newName)
+        {
+            if (string.IsNullOrWhiteSpace(newName))
+                throw new ArgumentException("Tên chương không được trống!");
 
+            string sql = "UPDATE Sections SET SectionTitle = @SectionTitle WHERE SectionID = @SectionID";
+            var parameters = new Dictionary<string, object>
+            {
+                { "SectionTitle", newName },
+                { "SectionID", sectionID }
+            };
+
+            return dataProcess.ChangeData(sql, parameters);
+        }
 
         /// <summary>
         /// Xóa Section
@@ -100,16 +116,15 @@ namespace StudyProcessManagement.Business.Teacher
             // Xóa hết bài học thuộc section này trước
             string sqlDeleteLessons = "DELETE FROM Lessons WHERE SectionID = @SectionID";
             var parameters = new Dictionary<string, object>
-    {
-        { "SectionID", sectionID }
-    };
+            {
+                { "SectionID", sectionID }
+            };
             dataProcess.ChangeData(sqlDeleteLessons, parameters);
 
             // Xóa section
             string sqlDeleteSection = "DELETE FROM Sections WHERE SectionID = @SectionID";
             return dataProcess.ChangeData(sqlDeleteSection, parameters);
         }
-
 
         // =============================================
         // LESSON OPERATIONS
@@ -121,16 +136,15 @@ namespace StudyProcessManagement.Business.Teacher
         public DataTable GetSectionLessons(string sectionID)
         {
             string sql = @"
-                SELECT LessonID, LessonTitle, LessonOrder 
-                FROM Lessons 
-                WHERE SectionID = @SectionID 
+                SELECT LessonID, LessonTitle, LessonOrder
+                FROM Lessons
+                WHERE SectionID = @SectionID
                 ORDER BY LessonOrder";
 
             var parameters = new Dictionary<string, object>
             {
                 { "@SectionID", sectionID }
             };
-
             return dataProcess.ReadData(sql, parameters);
         }
 
@@ -144,15 +158,14 @@ namespace StudyProcessManagement.Business.Teacher
             {
                 { "@LessonID", lessonID }
             };
-
             return dataProcess.ReadData(sql, parameters);
         }
 
         /// <summary>
-        /// Thêm Lesson mới
+        /// Thêm Lesson mới - FIXED: Không dùng binary columns
         /// </summary>
         public bool AddLesson(string courseID, string sectionID, string lessonTitle,
-    string content, string videoUrl, byte[] attachmentData, string attachmentName)
+            string content, string videoUrl, byte[] attachmentData, string attachmentName)
         {
             if (string.IsNullOrWhiteSpace(lessonTitle))
                 throw new ArgumentException("Tên bài học không được trống!");
@@ -167,21 +180,21 @@ namespace StudyProcessManagement.Business.Teacher
                 DataTable dtOrder = dataProcess.ReadData(sqlOrder, paramOrder);
                 int nextOrder = Convert.ToInt32(dtOrder.Rows[0][0]);
 
-                string sqlInsert = @"INSERT INTO Lessons 
-            (CourseID, SectionID, LessonTitle, LessonOrder, Content, VideoUrl, AttachmentData, AttachmentName) 
-            VALUES (@CourseID, @SectionID, @LessonTitle, @LessonOrder, @Content, @VideoUrl, @AttachmentData, @AttachmentName)";
+                // ✅ FIX: Không insert AttachmentData (binary), chỉ dùng AttachmentUrl
+                string sqlInsert = @"INSERT INTO Lessons
+                    (CourseID, SectionID, LessonTitle, LessonOrder, Content, VideoUrl, AttachmentUrl)
+                    VALUES (@CourseID, @SectionID, @LessonTitle, @LessonOrder, @Content, @VideoUrl, @AttachmentUrl)";
 
                 var parameters = new Dictionary<string, object>
-        {
-            { "CourseID", courseID },
-            { "SectionID", sectionID },
-            { "LessonTitle", lessonTitle },
-            { "LessonOrder", nextOrder },
-            { "Content", content ?? "" },
-            { "VideoUrl", videoUrl ?? "" },
-            { "AttachmentData", (object)attachmentData ?? DBNull.Value },
-            { "AttachmentName", (object)attachmentName ?? DBNull.Value }
-        };
+                {
+                    { "@CourseID", courseID },
+                    { "@SectionID", sectionID },
+                    { "@LessonTitle", lessonTitle },
+                    { "@LessonOrder", nextOrder },
+                    { "@Content", content ?? "" },  // ✅ NVARCHAR - string, KHÔNG phải byte[]
+                    { "@VideoUrl", videoUrl ?? "" },
+                    { "@AttachmentUrl", attachmentName ?? "" }  // ✅ Lưu tên file vào AttachmentUrl
+                };
 
                 return dataProcess.ChangeData(sqlInsert, parameters);
             }
@@ -191,54 +204,69 @@ namespace StudyProcessManagement.Business.Teacher
             }
         }
 
-
         /// <summary>
-        /// Cập nhật Lesson
+        /// Cập nhật Lesson - FIXED: Không dùng binary columns
         /// </summary>
         public bool UpdateLesson(string lessonID, string lessonTitle, string content,
     string videoUrl, byte[] attachmentData, string attachmentName)
         {
             if (string.IsNullOrWhiteSpace(lessonTitle))
                 throw new ArgumentException("Tên bài học không được để trống");
-
             if (string.IsNullOrEmpty(lessonID))
                 throw new ArgumentException("ID bài học không hợp lệ");
 
-            string sql = @"UPDATE Lessons 
-        SET LessonTitle = @Title, 
-            Content = @Content, 
-            VideoUrl = @VideoUrl, 
-            AttachmentData = @AttachmentData,
-            AttachmentName = @AttachmentName
-        WHERE LessonID = @LessonID";
+            string sql;
+            Dictionary<string, object> parameters;
 
-            var parameters = new Dictionary<string, object>
-    {
-        { "@LessonID", lessonID },
-        { "@Title", lessonTitle },
-        { "@Content", content ?? "" },
-        { "@VideoUrl", videoUrl ?? "" },
-        { "@AttachmentData", (object)attachmentData ?? DBNull.Value },
-        { "@AttachmentName", (object)attachmentName ?? DBNull.Value }
-    };
+            // ✅ KIỂM TRA: Có file mới hay không?
+            if (attachmentData != null && attachmentData.Length > 0)
+            {
+                // CÓ file mới → Update cả thông tin + file
+                sql = @"UPDATE Lessons
+            SET LessonTitle = @Title,
+                Content = @Content,
+                VideoUrl = @VideoUrl,
+                AttachmentUrl = @AttachmentUrl,
+                AttachmentData = @AttachmentData,
+                AttachmentName = @AttachmentName
+            WHERE LessonID = @LessonID";
 
-            return dataProcess.ChangeData(sql, parameters);
-        }
-        public bool UpdateSectionName(string sectionID, string newName)
+                parameters = new Dictionary<string, object>
         {
-            string sql = "UPDATE Sections SET SectionTitle = @SectionTitle WHERE SectionID = @SectionID";
-            var parameters = new Dictionary<string, object>
-    {
-        { "SectionTitle", newName },
-        { "SectionID", sectionID }
-    };
-            // Trả về true nếu update thành công
+            { "@LessonID", lessonID },
+            { "@Title", lessonTitle },
+            { "@Content", content ?? "" },
+            { "@VideoUrl", videoUrl ?? "" },
+            { "@AttachmentUrl", (object)attachmentName ?? DBNull.Value },
+            { "@AttachmentData", attachmentData },
+            { "@AttachmentName", attachmentName }
+        };
+            }
+            else
+            {
+                // KHÔNG có file mới → Chỉ update thông tin, GIỮ NGUYÊN file cũ
+                sql = @"UPDATE Lessons
+            SET LessonTitle = @Title,
+                Content = @Content,
+                VideoUrl = @VideoUrl
+            WHERE LessonID = @LessonID";
+
+                parameters = new Dictionary<string, object>
+        {
+            { "@LessonID", lessonID },
+            { "@Title", lessonTitle },
+            { "@Content", content ?? "" },
+            { "@VideoUrl", videoUrl ?? "" }
+        };
+            }
+
             return dataProcess.ChangeData(sql, parameters);
         }
+
 
         /// <summary>
         /// Xóa Lesson
-        /// </summary>  
+        /// </summary>
         public bool DeleteLesson(string lessonID)
         {
             if (string.IsNullOrEmpty(lessonID))
@@ -249,7 +277,6 @@ namespace StudyProcessManagement.Business.Teacher
             {
                 { "@LessonID", lessonID }
             };
-
             return dataProcess.ChangeData(sql, parameters);
         }
     }
