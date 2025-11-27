@@ -552,6 +552,9 @@
     <EmbeddedResource Include="Views\Admin\Course\CourseManagement.resx">
       <DependentUpon>CourseManagement.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Views\Admin\Course\CourseVerificationForm.resx">
+      <DependentUpon>CourseVerificationForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Views\Admin\Dashboard\DashboardForm.resx">
       <DependentUpon>DashboardForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -644,9 +647,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Data\student1_updated.sql" />
-    <Content Include="Data\StudyProcess_Complete.sql" />
-    <Content Include="Models\StudentsModel\Process1.sql" />
-    <Content Include="Models\StudentsModel\student1_updated.sql" />
     <Content Include="Resource\picture\admin2.jpg" />
     <Content Include="Resource\picture\blue.jpg" />
     <Content Include="Views\Student\assignments\student-assignments.html">

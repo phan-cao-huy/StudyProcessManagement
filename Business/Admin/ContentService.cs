@@ -27,7 +27,17 @@ namespace StudyProcessManagement.Business.Admin
         // Lấy chi tiết bài học
         public DataRow GetLessonDetail(string lessonId)
         {
-            string sql = "SELECT * FROM Lessons WHERE LessonID = @ID";
+            string sql = @"
+        SELECT 
+            LessonID, 
+            LessonTitle, 
+            Content, 
+            VideoUrl, 
+            AttachmentName,  -- Tên file
+            AttachmentData   -- Dữ liệu binary
+        FROM Lessons 
+        WHERE LessonID = @ID";
+
             var param = new Dictionary<string, object> { { "@ID", lessonId } };
             DataTable dt = dataProcess.ReadData(sql, param);
             return dt.Rows.Count > 0 ? dt.Rows[0] : null;
