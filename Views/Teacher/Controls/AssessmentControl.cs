@@ -397,15 +397,22 @@ namespace StudyProcessManagement.Views.Teacher.Controls
         // =============================================
         private void BtnCreate_Click(object sender, EventArgs e)
         {
-            // Mở form tạo bài tập mới
+            // Xác nhận trước khi thêm bài tập
+            var confirm = MessageBox.Show("Bạn có chắc chắn muốn thêm bài tập mới?",
+                                          "Xác nhận",
+                                          MessageBoxButtons.YesNo,
+                                          MessageBoxIcon.Question);
+            if (confirm == DialogResult.No) return;
+
             using (var form = new AssignmentForm())
             {
                 if (form.ShowDialog() == DialogResult.OK)
                 {
-                    LoadAssignments(); // Reload danh sách
+                    LoadAssignments();
                 }
             }
         }
+
 
         private void DgvAssignments_CellClick(object sender, DataGridViewCellEventArgs e)
         {

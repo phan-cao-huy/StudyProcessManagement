@@ -248,6 +248,25 @@
     <script>
         // MÔ PHỎNG DỮ LIỆU StudentContent từ C#
         let allResources = [];
+        // Hàm: Xử lý mở link Video và Tài liệu đính kèm
+        function openExternalLink(url) {
+            if (!url) {
+                alert('Đường dẫn không hợp lệ.');
+                return;
+            }
+
+            if (window.chrome && window.chrome.webview) {
+                // Gửi thông điệp JSON đến C# để C# mở URL bên ngoài
+                const message = JSON.stringify({
+                    Action: "OPEN_URL",
+                    URL: url
+                });
+                window.chrome.webview.postMessage(message);
+            } else {
+                // Fallback cho môi trường web/dev
+                window.open(url, '_blank');
+            }
+        }
 
         // ⭐ HÀM NHẬN DỮ LIỆU TỪ C# VÀ HIỂN THỊ LÊN FE ⭐
         window.renderResources = function (jsonString) {
@@ -303,7 +322,7 @@
             const isLesson = resource.LoaiTaiNguyen === 'Lesson';
             let badgeClass, statusText, actionText;
 
-            // 1. Xác định nút hành động
+            // 1. Xác định trạng thái và nút hành động chính
             switch (resource.TrangThai) {
                 case 'Hoàn thành':
                     badgeClass = 'badge-success';
@@ -334,32 +353,48 @@
                     break;
             }
 
-            const resourceDate = resource.NgayDang ? new Date(resource.NgayDang).toLocaleDateString('vi-VN') : 'N/A';
-            const dateLabel = isLesson ? 'Ngày đăng' : 'Hạn nộp:';
             const typeLabel = isLesson ? 'Bài học' : 'Bài tập';
             const typeEmoji = isLesson ? '📖' : '📝';
-
-            // Xác định hành động (Action) sẽ gửi đi: VIEW_LESSON hoặc VIEW_ASSIGNMENT
             const action = isLesson ? 'VIEW_LESSON' : 'VIEW_ASSIGNMENT';
+
+            // 2. Xử lý các link bổ sung (Video và Tài liệu)
+
+            // Lưu ý: Tôi dùng LinkVideo và LinkTaiLieu (chữ hoa đầu) để khớp với thuộc tính JSON trả về từ C#
+
+            // Xử lý link Video (chỉ hiển thị nếu có LinkVideo)
+            const videoLinkHtml = resource.LinkVideo ?
+                `<button class="btn btn-secondary btn-sm" onclick="event.preventDefault(); openExternalLink('${resource.LinkVideo}');">
+                    <i class="fas fa-video"></i> Video
+                </button>` : '';
+
+            // Xử lý link Tài liệu đính kèm (chỉ hiển thị nếu có LinkTaiLieu)
+            const documentLinkHtml = resource.LinkTaiLieu ?
+                `<button class="btn btn-info btn-sm" style="margin-left: 5px;" onclick="event.preventDefault(); openExternalLink('${resource.LinkTaiLieu}');">
+                    <i class="fas fa-file-alt"></i> Tài liệu
+                </button>` : '';
 
             return `
             <div class="resource-card resource-${isLesson ? 'lesson' : 'assignment'}">
                 <div class="resource-body">
-                    <div class="resource-type">${typeEmoji} ${typeLabel} <span class="badge ${badgeClass}">${statusText}</span></div>
+                    <div class="resource-type">
+                        ${typeEmoji} ${typeLabel} <span class="badge ${badgeClass}">${statusText}</span>
+                    </div>
                     <h4>${resource.TenTaiNguyen}</h4>
                     <span class="resource-course">Khóa học: ${resource.TenKhoaHoc}</span>
                     <span class="resource-chapter">Chương: ${resource.TenChuong || 'Chưa xác định'}</span>
                     <p class="resource-description">${resource.MoTa || 'Không có mô tả.'}</p>
-                </div>
+                    
+                    <div class="resource-extra-links" style="margin-top: 10px;">
+                        ${videoLinkHtml} 
+                        ${documentLinkHtml}
+                    </div>
+                    </div>
                 <div class="resource-footer">
                     <div class="resource-date"> </div>
-                    <button class="action-button btn-view" 
-                        onclick="viewResource('${action}', ${resource.ResourceID})">
-                        ${actionText}
-                    </button>
+                  
                 </div>
             </div>
-        `;
+            `;
         }
 
         // Hàm lọc tài nguyên (Giữ nguyên)
@@ -369,6 +404,7 @@
             const status = document.getElementById('filterStatus').value;
 
             const filteredData = allResources.filter(r => {
+                
                 const matchCourse = courseId === "" || r.CourseID.toString() === courseId;
                 const matchType = type === "" || r.LoaiTaiNguyen === type;
                 const matchStatus = status === "" || r.TrangThai === status;

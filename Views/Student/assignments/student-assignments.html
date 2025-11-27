@@ -1255,6 +1255,7 @@
         }
        
         // Hàm mở Modal Chi Tiết Bài Tập (Đã sửa lỗi tên thuộc tính và dùng Modal)
+        // Hàm mở Modal Chi Tiết Bài Tập (ĐÃ HOÀN THIỆN VÀ SỬ DỤNG window.chrome.webview.postMessage)
         function openDetailModal(assignmentIdString, highlightNote = false) {
             const assignmentId = parseInt(assignmentIdString);
             const assignment = assignmentData.find(a => a.assignmentID === assignmentId);
@@ -1264,25 +1265,54 @@
                 return;
             }
 
-            // ⭐ Đổ dữ liệu vào Modal ⭐
+            // ⭐ 1. Đổ dữ liệu vào Modal ⭐
             document.getElementById('detailAssignmentName').textContent = assignment.tenBaiTap;
             document.getElementById('detailCourseName').textContent = assignment.tenKhoaHoc;
             document.getElementById('detailStatus').textContent = assignment.trangThai;
-            document.getElementById('detailDescription').innerHTML = assignment.moTa || 'Không có mô tả chi tiết.';
+            console.log(assignment.taiLieuDinhKem)
+            // 2. Xây dựng nội dung mô tả, bao gồm cả tài liệu đính kèm
+            let descriptionContent = assignment.moTa || 'Không có mô tả chi tiết.';
 
+            // THÊM: Xử lý hiển thị Tài liệu đính kèm VÀ GỌI HÀM postMessage
+            if (assignment.taiLieuDinhKem) {
+                // Tạo một JSON string để gửi đến C#
+                const openUrlMessage = JSON.stringify({
+                    Action: "OPEN_URL"
+                });
+
+                descriptionContent += `
+                    <p style="margin-top: 15px; padding: 10px; border: 1px solid #ddd; background-color: #f9f9f9; border-radius: 4px;">
+                        <i class="fas fa-paperclip" style="color: #3498db; margin-right: 5px;"></i>
+                        <strong>Tài liệu đính kèm:</strong> 
+                        <a href="#" class="attachment-link" 
+                           onclick="event.preventDefault(); 
+                                    if (window.chrome && window.chrome.webview) {
+                                        window.chrome.webview.postMessage('${openUrlMessage}');
+                                    } else {
+                                        alert('Đang tải tài liệu: ${assignment.taiLieuDinhKem}');
+                                    }">
+                            Tải Tài liệu
+                        </a>
+                    </p>
+                `;
+            }
+
+            // Đưa nội dung đã xây dựng vào #detailDescription (nằm trong modal-content)
+            document.getElementById('detailDescription').innerHTML = descriptionContent;
+
+            // 3. Tiếp tục xử lý các phần còn lại của modal
             const scoreSection = document.getElementById('detailScoreSection');
             const teacherNoteSection = document.getElementById('detailTeacherNoteSection');
             const detailTeacherNote = document.getElementById('detailTeacherNote');
 
-            // Xử lý phần điểm và ghi chú (diemDat !== null)
+            // Xử lý phần điểm và ghi chú
             if (assignment.diemDat !== null) {
                 scoreSection.style.display = 'block';
                 document.getElementById('detailScore').textContent = `${assignment.diemDat} / ${assignment.diemToiDa}`;
 
-                // Kiểm tra Ghi chú Giáo viên (Dùng NhanXetGiaoVien)
-                if (assignment.NhanXetGiaoVien) {
+                if (assignment.nhanXetGiaoVien) {
                     teacherNoteSection.style.display = 'block';
-                    detailTeacherNote.innerHTML = assignment.NhanXetGiaoVien;
+                    detailTeacherNote.innerHTML = assignment.nhanXetGiaoVien;
                 } else {
                     teacherNoteSection.style.display = 'none';
                 }
@@ -1291,14 +1321,14 @@
                 teacherNoteSection.style.display = 'none';
             }
 
-            // Hiển thị Modal
+            // 4. Hiển thị Modal
             document.getElementById('detailModal').classList.add('active');
 
-            // ⭐ Logic cuộn (nếu được gọi từ nút Ghi chú Giáo viên) ⭐
+            // Logic cuộn (nếu được gọi từ nút Ghi chú Giáo viên)
             if (highlightNote) {
                 setTimeout(() => {
                     teacherNoteSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    detailTeacherNote.classList.add('highlight-pulse'); // Thêm hiệu ứng nhấp nháy (cần CSS)
+                    detailTeacherNote.classList.add('highlight-pulse');
                     setTimeout(() => {
                         detailTeacherNote.classList.remove('highlight-pulse');
                     }, 1500);

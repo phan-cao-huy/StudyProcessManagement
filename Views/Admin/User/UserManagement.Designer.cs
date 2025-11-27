@@ -182,7 +182,7 @@ namespace StudyProcessManagement.Views.Admin.User
             this.lblSearchIcon.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblSearchIcon.Location = new System.Drawing.Point(354, 25);
             this.lblSearchIcon.Name = "lblSearchIcon";
-            this.lblSearchIcon.Size = new System.Drawing.Size(39, 28);
+            this.lblSearchIcon.Size = new System.Drawing.Size(32, 21);
             this.lblSearchIcon.TabIndex = 0;
             this.lblSearchIcon.Text = "🔍";
             this.lblSearchIcon.Click += new System.EventHandler(this.lblSearchIcon_Click);
@@ -193,7 +193,7 @@ namespace StudyProcessManagement.Views.Admin.User
             this.txtSearch.ForeColor = System.Drawing.Color.Gray;
             this.txtSearch.Location = new System.Drawing.Point(57, 23);
             this.txtSearch.Name = "txtSearch";
-            this.txtSearch.Size = new System.Drawing.Size(300, 30);
+            this.txtSearch.Size = new System.Drawing.Size(300, 25);
             this.txtSearch.TabIndex = 0;
             this.txtSearch.Text = "Tìm kiếm người dùng...";
             this.txtSearch.TextChanged += new System.EventHandler(this.txtSearch_Enter);
@@ -213,6 +213,7 @@ namespace StudyProcessManagement.Views.Admin.User
             this.btnExportExcel.TabIndex = 2;
             this.btnExportExcel.Text = "📤 Xuất Excel";
             this.btnExportExcel.UseVisualStyleBackColor = false;
+            this.btnExportExcel.Click += new System.EventHandler(this.btnExportExcel_Click_1);
             // 
             // btnAddUser
             // 
@@ -248,7 +249,7 @@ namespace StudyProcessManagement.Views.Admin.User
             this.lblTitle.Font = new System.Drawing.Font("Segoe UI", 16F, System.Drawing.FontStyle.Bold);
             this.lblTitle.Location = new System.Drawing.Point(20, 10);
             this.lblTitle.Name = "lblTitle";
-            this.lblTitle.Size = new System.Drawing.Size(283, 37);
+            this.lblTitle.Size = new System.Drawing.Size(230, 30);
             this.lblTitle.TabIndex = 0;
             this.lblTitle.Text = "Quản Lý Người Dùng";
             // 
@@ -259,7 +260,7 @@ namespace StudyProcessManagement.Views.Admin.User
             this.lblBreadcrumb.ForeColor = System.Drawing.Color.Gray;
             this.lblBreadcrumb.Location = new System.Drawing.Point(23, 45);
             this.lblBreadcrumb.Name = "lblBreadcrumb";
-            this.lblBreadcrumb.Size = new System.Drawing.Size(218, 20);
+            this.lblBreadcrumb.Size = new System.Drawing.Size(177, 15);
             this.lblBreadcrumb.TabIndex = 1;
             this.lblBreadcrumb.Text = "Trang chủ / Quản lý người dùng";
             // 

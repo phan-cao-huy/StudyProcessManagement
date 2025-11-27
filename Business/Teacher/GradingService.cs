@@ -19,10 +19,12 @@ namespace StudyProcessManagement.Business.Teacher
         /// </summary>
         public DataTable GetAllSubmissions(string teacherID, string courseFilter = null, string statusFilter = null)
         {
-            string sql = @"
+                    string sql = @"
                 SELECT 
                     s.SubmissionID,
+                    acc.AccountID AS StudentCode,
                     u.FullName AS StudentName,
+                    acc.Email,
                     a.Title AS AssignmentTitle,
                     c.CourseName,
                     s.SubmissionDate,
@@ -41,6 +43,7 @@ namespace StudyProcessManagement.Business.Teacher
                 INNER JOIN Assignments a ON s.AssignmentID = a.AssignmentID
                 INNER JOIN Courses c ON a.CourseID = c.CourseID
                 INNER JOIN Users u ON s.StudentID = u.UserID
+                INNER JOIN Accounts acc ON u.AccountID = acc.AccountID
                 WHERE c.TeacherID = @TeacherID";
 
             var parameters = new Dictionary<string, object>

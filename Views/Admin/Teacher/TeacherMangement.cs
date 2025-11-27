@@ -5,14 +5,14 @@ using System.Windows.Forms;
 using StudyProcessManagement.Business.Admin;
 using StudyProcessManagement.Models;
 using StudyProcessManagement.Views.Admin.User;
-
+using Excel = Microsoft.Office.Interop.Excel;
 namespace StudyProcessManagement.Views.Admin.Teacher.TeacherMangement
 {
     public partial class TeacherMangement : Form
     {
        
         private TeacherService teacherService = new TeacherService();
-
+        private List<Users> _currentTeacherList;
         public TeacherMangement()
         {
             InitializeComponent();
@@ -38,7 +38,7 @@ namespace StudyProcessManagement.Views.Admin.Teacher.TeacherMangement
 
                 // Gọi Service lấy danh sách Teacher
                 List<Users> list = teacherService.GetAllTeachers(keyword);
-
+                _currentTeacherList = list;
                 // (Đoạn kiểm tra rỗng này có thể bỏ nếu muốn form luôn hiện trống khi ko có data)
                 // if (list.Count == 0 && !string.IsNullOrEmpty(keyword)) { ... }
 
@@ -174,6 +174,141 @@ namespace StudyProcessManagement.Views.Admin.Teacher.TeacherMangement
             }
         }
 
-        private void btnExportExcel_Click(object sender, EventArgs e) { }
+        private void btnExportExcel_Click(object sender, EventArgs e) {  }
+        // --- PHẦN XUẤT EXCEL (Microsoft.Office.Interop.Excel) ---
+
+        private void ExportToExcelInterop()
+        {
+            if (_currentTeacherList == null || _currentTeacherList.Count == 0)
+            {
+                MessageBox.Show("Không có dữ liệu giảng viên để xuất ra Excel.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            // 1. Dùng SaveFileDialog để lấy đường dẫn và tên file từ người dùng
+            using (SaveFileDialog sfd = new SaveFileDialog()
+            {
+                Filter = "Excel Workbook (*.xlsx)|*.xlsx",
+                Title = "Lưu danh sách Giảng viên",
+                FileName = $"DanhSachGiangVien_{DateTime.Now:yyyyMMdd}.xlsx"
+            })
+            {
+                if (sfd.ShowDialog() != DialogResult.OK)
+                {
+                    return; // Người dùng hủy bỏ
+                }
+
+                // --- BẮT ĐẦU XUẤT EXCEL ---
+
+                Excel.Application excelApp = null;
+                Excel.Workbook workbook = null;
+                Excel.Worksheet worksheet = null;
+
+                try
+                {
+                    excelApp = new Excel.Application();
+                    excelApp.Visible = false;
+                    workbook = excelApp.Workbooks.Add(Type.Missing);
+                    worksheet = (Excel.Worksheet)workbook.ActiveSheet;
+
+                    int excelRow = 1;
+
+                    // 2. Ghi Header (Tiêu đề cột)
+                    worksheet.Cells[excelRow, 1] = "Mã giảng viên";
+                    worksheet.Cells[excelRow, 2] = "Họ và tên";
+                    worksheet.Cells[excelRow, 3] = "Email";
+                    worksheet.Cells[excelRow, 4] = "Vai trò";
+                    worksheet.Cells[excelRow, 5] = "Trạng thái";
+
+                    // Định dạng tiêu đề
+                    worksheet.Range["A1", "E1"].Font.Bold = true;
+
+                    // 3. Ghi Dữ liệu từ List<Users> đã được lọc
+                    excelRow++; // Bắt đầu từ hàng 2
+
+                    foreach (var user in _currentTeacherList)
+                    {
+                        worksheet.Cells[excelRow, 1] = user.UserID;
+                        worksheet.Cells[excelRow, 2] = user.FullName;
+                        worksheet.Cells[excelRow, 3] = user.Email;
+                        worksheet.Cells[excelRow, 4] = user.Role;
+                        worksheet.Cells[excelRow, 5] = user.StatusText;
+
+                        // Tô màu trạng thái (Dùng ColorTranslator cho Interop)
+                        if (user.IsActive)
+                        {
+                            worksheet.Cells[excelRow, 5].Font.Color = ColorTranslator.ToOle(Color.Green);
+                        }
+                        else
+                        {
+                            worksheet.Cells[excelRow, 5].Font.Color = ColorTranslator.ToOle(Color.Red);
+                        }
+
+                        excelRow++;
+                    }
+
+                    // 4. Định dạng và LƯU FILE
+                    worksheet.UsedRange.Columns.AutoFit();
+
+                    workbook.SaveAs(
+                        sfd.FileName,
+                        Excel.XlFileFormat.xlOpenXMLWorkbook,
+                        Type.Missing,
+                        Type.Missing,
+                        false,
+                        false,
+                        Excel.XlSaveAsAccessMode.xlNoChange,
+                        Type.Missing,
+                        Type.Missing,
+                        Type.Missing,
+                        Type.Missing,
+                        Type.Missing
+                    );
+
+                    // Đóng workbook và thoát Excel App
+                    workbook.Close(false);
+                    excelApp.Quit();
+
+                    MessageBox.Show($"Xuất Excel thành công!\nĐã lưu tại: {sfd.FileName}", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    // Nếu có lỗi, đảm bảo Excel được đóng và giải phóng
+                    if (workbook != null) workbook.Close(false);
+                    if (excelApp != null) excelApp.Quit();
+                    MessageBox.Show("Lỗi khi xuất file Excel: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                finally
+                {
+                    // Luôn giải phóng các đối tượng COM
+                    ReleaseObject(worksheet);
+                    ReleaseObject(workbook);
+                    ReleaseObject(excelApp);
+                }
+            }
+        }
+
+        // Hàm hỗ trợ giải phóng đối tượng COM
+        private void ReleaseObject(object obj)
+        {
+            try
+            {
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(obj);
+                obj = null;
+            }
+            catch (Exception)
+            {
+                obj = null;
+            }
+            finally
+            {
+                GC.Collect();
+            }
+        }
+
+        private void btnExportExcel_Click_1(object sender, EventArgs e)
+        {
+            ExportToExcelInterop();
+        }
     }
 }
