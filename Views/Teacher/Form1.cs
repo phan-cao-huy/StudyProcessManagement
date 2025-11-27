@@ -59,7 +59,7 @@ namespace StudyProcessManagement.Views.Teacher
             if (result == DialogResult.Yes)
             {
                 this.Close();
-                var loginForm = new StudyProcessManagement.Views.Login.Login();
+                var loginForm = new StudyProcessManagement.Views.Login.SignIn();
                 loginForm.Show();
             }
         }

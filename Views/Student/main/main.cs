@@ -398,7 +398,7 @@ namespace StudyProcessManagement.Views.Student.main
             {
                 this.Invoke((MethodInvoker)delegate
                 {
-                    StudyProcessManagement.Views.Login.Login loginForm = new StudyProcessManagement.Views.Login.Login();
+                    StudyProcessManagement.Views.Login.SignIn loginForm = new StudyProcessManagement.Views.Login.SignIn();
                     this.Hide();
                     loginForm.ShowDialog();
                     this.Close();
