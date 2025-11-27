@@ -18,7 +18,7 @@ namespace StudyProcessManagement.Views.Login
         // Khởi tạo AccountService cho Admin/Teacher
         AccountService user = new AccountService();
         // Khởi tạo DataProcess cho Student
-        private DataProcess dal = new DataProcess();
+        private DataProcessDAL dal = new DataProcessDAL();
 
         public Login()
         {
@@ -93,7 +93,7 @@ namespace StudyProcessManagement.Views.Login
 
                                     // ⭐ ĐÃ SỬA: Thêm .ShowDialog()
                                     Views.Student.main.main mainForm = new Views.Student.main.main(student);
-                                    mainForm.ShowDialog();
+                                    mainForm.ShowDialog(); 
                                 }
                                 else
                                 {

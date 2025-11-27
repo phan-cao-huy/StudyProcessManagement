@@ -1,4 +1,5 @@
 using Microsoft.IdentityModel.Protocols; // <--- Giữ lại (Từ teacher-final)
+using StudyProcessManagement.Data;
 using System;
 using System.Collections.Generic;
 using System.Configuration; // <--- Giữ lại (Từ teacher-final)
@@ -159,6 +160,60 @@ namespace StudyProcessManagement.Business
                 CloseConnect();
             }
             return dt;
+        }
+        // Đặt hàm này vào trong public class DataProcessDAL
+        public StudentInfoModel LoginAndGetStudentInfo(string email, string passwordHash)
+        {
+            // Cần phải có `using StudyProcessManagement.Data;` ở đầu file DataProcess.cs
+            StudentInfoModel studentInfo = null;
+            string sqlQuery = @"
+        SELECT 
+            u.UserID, u.FullName, acc.Email, u.PhoneNumber, 
+            u.AvatarUrl, u.DateOfBirth, u.Address
+        FROM Accounts acc
+        INNER JOIN Users u ON acc.AccountID = u.AccountID
+        WHERE acc.Email = @Email 
+          AND acc.PasswordHash = @PasswordHash 
+          AND acc.Role = 'Student';";
+
+            try
+            {
+                OpenConnect(); // Sử dụng OpenConnect của DataProcessDAL
+                using (SqlCommand sqlCmd = new SqlCommand(sqlQuery, sqlConnect))
+                {
+                    sqlCmd.Parameters.AddWithValue("@Email", email);
+                    sqlCmd.Parameters.AddWithValue("@PasswordHash", passwordHash);
+
+                    using (SqlDataReader reader = sqlCmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            studentInfo = new StudentInfoModel
+                            {
+                                UserID = reader["UserID"].ToString(),
+                                FullName = reader["FullName"].ToString(),
+                                Email = reader["Email"].ToString(),
+                                PhoneNumber = reader["PhoneNumber"].ToString(),
+                                AvatarUrl = reader["AvatarUrl"] == DBNull.Value ? null : reader["AvatarUrl"].ToString(),
+                                DateOfBirth = reader["DateOfBirth"] == DBNull.Value
+                                    ? (DateTime?)null
+                                    : (DateTime)reader["DateOfBirth"],
+                                Address = reader["Address"].ToString()
+                            };
+                        }
+                    }
+                }
+            }
+            catch (SqlException ex)
+            {
+                // Bạn có thể cân nhắc ném lỗi lên hoặc hiển thị MessageBox tùy theo kiến trúc
+                throw new Exception("Lỗi truy vấn SQL khi đăng nhập: " + ex.Message);
+            }
+            finally
+            {
+                CloseConnect(); // Sử dụng CloseConnect của DataProcessDAL
+            }
+            return studentInfo;
         }
     }
 }
