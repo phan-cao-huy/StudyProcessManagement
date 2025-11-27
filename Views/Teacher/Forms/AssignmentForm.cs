@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.IO;  // THÊM DÒNG NÀY
 using System.Windows.Forms;
 using StudyProcessManagement.Business.Teacher;
 
@@ -12,6 +13,10 @@ namespace StudyProcessManagement.Views.Teacher.Forms
         private int assignmentID;
         private bool isEditMode = false;
 
+        // THÊM 2 biến lưu file
+        private byte[] selectedFileData = null;
+        private string selectedFileName = null;
+
         public AssignmentForm()
         {
             InitializeComponent();
@@ -20,6 +25,8 @@ namespace StudyProcessManagement.Views.Teacher.Forms
             isEditMode = false;
             dtpAssignedDate.Value = DateTime.Now;
             dtpDueDate.Value = DateTime.Now.AddDays(7);
+            numMaxScore.Maximum = 10;
+            numMaxScore.Minimum = 0;
             LoadCourses();
         }
 
@@ -30,6 +37,8 @@ namespace StudyProcessManagement.Views.Teacher.Forms
             this.assignmentID = assignmentID;
             this.Text = "Chỉnh sửa bài tập";
             isEditMode = true;
+            numMaxScore.Maximum = 10;
+            numMaxScore.Minimum = 0;
             LoadCourses();
             LoadAssignment(assignmentID);
         }
@@ -54,7 +63,25 @@ namespace StudyProcessManagement.Views.Teacher.Forms
                 dtpAssignedDate.Value = Convert.ToDateTime(row["AssignedDate"]);
                 dtpDueDate.Value = Convert.ToDateTime(row["DueDate"]);
                 numMaxScore.Value = Convert.ToDecimal(row["MaxScore"]);
-                txtAttachment.Text = row["AttachmentPath"]?.ToString() ?? "";
+
+                // Load file đính kèm nếu có
+                if (row["AttachmentName"] != DBNull.Value &&
+    !string.IsNullOrEmpty(row["AttachmentName"].ToString()))
+                {
+                    selectedFileName = row["AttachmentName"].ToString();
+                    txtAttachment.Text = selectedFileName;
+
+                    if (row["AttachmentData"] != DBNull.Value)
+                        selectedFileData = (byte[])row["AttachmentData"];
+                    else
+                        selectedFileData = null;
+                }
+                else
+                {
+                    txtAttachment.Text = "";
+                    selectedFileData = null;
+                    selectedFileName = null;
+                }
             }
             else
             {
@@ -63,16 +90,42 @@ namespace StudyProcessManagement.Views.Teacher.Forms
             }
         }
 
-        // Đúng tên hàm dựa theo Designer.cs !
+        // SỬA HÀM NÀY
         private void btnBrowse_Click(object sender, EventArgs e)
         {
-            OpenFileDialog ofd = new OpenFileDialog { Filter = "Tất cả các tệp|*.*" };
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Filter = "Tất cả file|*.*|PDF|*.pdf|Word|*.docx;*.doc";
+            ofd.Title = "Chọn file đính kèm";
+
             if (ofd.ShowDialog() == DialogResult.OK)
             {
-                txtAttachment.Text = ofd.FileName;
+                try
+                {
+                    // Kiểm tra kích thước file (giới hạn 10MB)
+                    long fileSize = new FileInfo(ofd.FileName).Length;
+                    if (fileSize > 10 * 1024 * 1024)
+                    {
+                        MessageBox.Show("File không được vượt quá 10MB!", "Lỗi",
+                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    // Đọc file thành byte[]
+                    selectedFileData = File.ReadAllBytes(ofd.FileName);
+                    selectedFileName = Path.GetFileName(ofd.FileName);
+                    txtAttachment.Text = selectedFileName;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Lỗi đọc file: " + ex.Message, "Lỗi",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    selectedFileData = null;
+                    selectedFileName = null;
+                }
             }
         }
 
+        // SỬA HÀM NÀY
         private void BtnSave_Click(object sender, EventArgs e)
         {
             int courseID = Convert.ToInt32(cboCourse.SelectedValue);
@@ -81,7 +134,6 @@ namespace StudyProcessManagement.Views.Teacher.Forms
             DateTime assignedDate = dtpAssignedDate.Value;
             DateTime dueDate = dtpDueDate.Value;
             decimal maxScore = numMaxScore.Value;
-            string attachmentPath = txtAttachment.Text.Trim();
 
             if (string.IsNullOrEmpty(title))
             {
@@ -89,7 +141,7 @@ namespace StudyProcessManagement.Views.Teacher.Forms
                 return;
             }
 
-            // ----------- Validate xác nhận ----------
+            // Validate xác nhận
             DialogResult confirm;
             if (isEditMode)
             {
@@ -101,7 +153,6 @@ namespace StudyProcessManagement.Views.Teacher.Forms
             }
             if (confirm == DialogResult.No)
                 return;
-            // ----------- Hết validate xác nhận -------
 
             try
             {
@@ -109,14 +160,16 @@ namespace StudyProcessManagement.Views.Teacher.Forms
                 if (isEditMode)
                 {
                     result = assignmentFormService.UpdateAssignment(
-                        assignmentID, courseID, title, description, assignedDate, dueDate, maxScore, attachmentPath
+                        assignmentID, courseID, title, description, assignedDate, dueDate, maxScore,
+                        selectedFileData, selectedFileName  // Truyền file data
                     );
                 }
                 else
                 {
                     result = assignmentFormService.CreateAssignment(
-                        courseID, title, description, assignedDate, dueDate, maxScore, attachmentPath
-                    ) >0;
+                        courseID, title, description, assignedDate, dueDate, maxScore,
+                        selectedFileData, selectedFileName  // Truyền file data
+                    ) > 0;
                 }
 
                 if (result)
@@ -135,7 +188,6 @@ namespace StudyProcessManagement.Views.Teacher.Forms
                 MessageBox.Show("Lỗi: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
