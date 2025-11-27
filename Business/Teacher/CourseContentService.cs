@@ -151,7 +151,8 @@ namespace StudyProcessManagement.Business.Teacher
         /// <summary>
         /// Thêm Lesson mới
         /// </summary>
-        public bool AddLesson(string courseID, string sectionID, string lessonTitle, string content, string videoUrl, string attachmentUrl)
+        public bool AddLesson(string courseID, string sectionID, string lessonTitle,
+    string content, string videoUrl, byte[] attachmentData, string attachmentName)
         {
             if (string.IsNullOrWhiteSpace(lessonTitle))
                 throw new ArgumentException("Tên bài học không được trống!");
@@ -160,17 +161,16 @@ namespace StudyProcessManagement.Business.Teacher
 
             try
             {
-                // Lấy thứ tự tiếp theo cho LessonOrder
+                // Lấy thứ tự tiếp theo
                 string sqlOrder = "SELECT ISNULL(MAX(LessonOrder), 0) + 1 FROM Lessons WHERE SectionID = @SectionID";
-                var paramOrder = new Dictionary<string, object>
-        {
-            { "SectionID", sectionID }
-        };
+                var paramOrder = new Dictionary<string, object> { { "SectionID", sectionID } };
                 DataTable dtOrder = dataProcess.ReadData(sqlOrder, paramOrder);
                 int nextOrder = Convert.ToInt32(dtOrder.Rows[0][0]);
 
-                // KHÔNG truyền LessonID khi insert (auto increment)
-                string sqlInsert = "INSERT INTO Lessons (CourseID, SectionID, LessonTitle, LessonOrder, Content, VideoUrl, AttachmentUrl) VALUES (@CourseID, @SectionID, @LessonTitle, @LessonOrder, @Content, @VideoUrl, @AttachmentUrl)";
+                string sqlInsert = @"INSERT INTO Lessons 
+            (CourseID, SectionID, LessonTitle, LessonOrder, Content, VideoUrl, AttachmentData, AttachmentName) 
+            VALUES (@CourseID, @SectionID, @LessonTitle, @LessonOrder, @Content, @VideoUrl, @AttachmentData, @AttachmentName)";
+
                 var parameters = new Dictionary<string, object>
         {
             { "CourseID", courseID },
@@ -179,7 +179,8 @@ namespace StudyProcessManagement.Business.Teacher
             { "LessonOrder", nextOrder },
             { "Content", content ?? "" },
             { "VideoUrl", videoUrl ?? "" },
-            { "AttachmentUrl", attachmentUrl ?? "" }
+            { "AttachmentData", (object)attachmentData ?? DBNull.Value },
+            { "AttachmentName", (object)attachmentName ?? DBNull.Value }
         };
 
                 return dataProcess.ChangeData(sqlInsert, parameters);
@@ -195,7 +196,7 @@ namespace StudyProcessManagement.Business.Teacher
         /// Cập nhật Lesson
         /// </summary>
         public bool UpdateLesson(string lessonID, string lessonTitle, string content,
-            string videoUrl, string attachmentUrl)
+    string videoUrl, byte[] attachmentData, string attachmentName)
         {
             if (string.IsNullOrWhiteSpace(lessonTitle))
                 throw new ArgumentException("Tên bài học không được để trống");
@@ -203,22 +204,23 @@ namespace StudyProcessManagement.Business.Teacher
             if (string.IsNullOrEmpty(lessonID))
                 throw new ArgumentException("ID bài học không hợp lệ");
 
-            string sql = @"
-                UPDATE Lessons 
-                SET LessonTitle = @Title, 
-                    Content = @Content, 
-                    VideoUrl = @VideoUrl, 
-                    AttachmentUrl = @Attachment 
-                WHERE LessonID = @LessonID";
+            string sql = @"UPDATE Lessons 
+        SET LessonTitle = @Title, 
+            Content = @Content, 
+            VideoUrl = @VideoUrl, 
+            AttachmentData = @AttachmentData,
+            AttachmentName = @AttachmentName
+        WHERE LessonID = @LessonID";
 
             var parameters = new Dictionary<string, object>
-            {
-                { "@LessonID", lessonID },
-                { "@Title", lessonTitle },
-                { "@Content", content ?? "" },
-                { "@VideoUrl", videoUrl ?? "" },
-                { "@Attachment", attachmentUrl ?? "" }
-            };
+    {
+        { "@LessonID", lessonID },
+        { "@Title", lessonTitle },
+        { "@Content", content ?? "" },
+        { "@VideoUrl", videoUrl ?? "" },
+        { "@AttachmentData", (object)attachmentData ?? DBNull.Value },
+        { "@AttachmentName", (object)attachmentName ?? DBNull.Value }
+    };
 
             return dataProcess.ChangeData(sql, parameters);
         }
