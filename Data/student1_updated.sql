@@ -770,3 +770,251 @@ GO
 ALTER TABLE Submissions ADD CONSTRAINT FK_Submissions_Assignments
     FOREIGN KEY (AssignmentID) REFERENCES Assignments(AssignmentID) ON DELETE CASCADE;
 GO
+IF OBJECT_ID('sp_GetAllResourcesForStudent', 'P') IS NOT NULL
+    DROP PROCEDURE sp_GetAllResourcesForStudent;
+GO
+
+CREATE PROCEDURE sp_GetAllResourcesForStudent
+    @StudentID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Lấy trạng thái Submissions (Bài nộp) cho các Bài tập của sinh viên
+    WITH StudentSubmissions AS (
+        SELECT 
+            AssignmentID,
+            SubmissionID,
+            Score,
+            SubmissionDate,
+            a.DueDate -- Cần DueDate từ Assignments
+        FROM Submissions s
+        INNER JOIN Assignments a ON s.AssignmentID = a.AssignmentID
+        WHERE s.StudentID = @StudentID
+    ),
+    -- Lấy thông tin Giảng viên (Teacher's FullName)
+    TeacherInfo AS (
+        SELECT u.AccountID, u.FullName AS TenGiangVien
+        FROM Users u 
+        INNER JOIN Accounts a ON u.AccountID = a.AccountID
+        WHERE a.Role = N'Teacher'
+    )
+    
+    -- KẾT HỢP DỮ LIỆU TỪ LESSONS VÀ ASSIGNMENTS
+    SELECT *
+    FROM (
+        -- 1. Dữ liệu Bài học (Lessons)
+        SELECT
+            N'Lesson' AS LoaiTaiNguyen,
+            l.LessonID AS ResourceID,
+            l.LessonTitle AS TenTaiNguyen,
+            l.Content AS MoTa,
+            l.VideoUrl AS LinkVideo,
+            l.AttachmentUrl AS LinkTaiLieu,
+            N'Bài giảng' AS LoaiChiTiet,
+            c.CourseID,
+            c.CourseName AS TenKhoaHoc,
+            c.ImageCover AS AnhKhoaHoc,
+            s.SectionID,
+            s.SectionTitle AS TenChuong,
+            t_info.TenGiangVien,
+            N'Chưa bắt đầu' AS TrangThai, -- GIẢ ĐỊNH: Logic hoàn thành sẽ được xử lý ở C#
+            c.CreatedAt AS NgayDang, -- Dùng ngày tạo Course
+            s.SectionOrder AS ThuTuChuong,
+            l.LessonOrder AS ThuTu
+        FROM Lessons l
+        INNER JOIN Courses c ON l.CourseID = c.CourseID
+        INNER JOIN Sections s ON l.SectionID = s.SectionID
+        INNER JOIN TeacherInfo t_info ON c.TeacherID = t_info.AccountID
+        INNER JOIN Enrollments e ON c.CourseID = e.CourseID -- Chỉ lấy khóa đã ghi danh
+        WHERE e.StudentID = @StudentID
+
+        UNION ALL
+
+        -- 2. Dữ liệu Bài tập (Assignments)
+        SELECT
+            N'Assignment' AS LoaiTaiNguyen,
+            a.AssignmentID AS ResourceID,
+            a.Title AS TenTaiNguyen,
+            a.Description AS MoTa,
+            NULL AS LinkVideo,
+            a.AttachmentPath AS LinkTaiLieu,
+            N'Đề bài' AS LoaiChiTiet,
+            c.CourseID,
+            c.CourseName AS TenKhoaHoc,
+            c.ImageCover AS AnhKhoaHoc,
+            NULL AS SectionID,
+            NULL AS TenChuong,
+            t_info.TenGiangVien,
+            -- Tính toán Trạng thái
+            CASE
+                WHEN sub.Score IS NOT NULL THEN N'Hoàn thành' -- Đã chấm xong
+                WHEN sub.SubmissionID IS NOT NULL AND a.DueDate < GETDATE() THEN N'Nộp trễ' 
+                WHEN sub.SubmissionID IS NOT NULL THEN N'Đã nộp'
+                WHEN a.DueDate < GETDATE() THEN N'Quá hạn'
+                ELSE N'Chưa nộp'
+            END AS TrangThai,
+            a.AssignedDate AS NgayDang,
+            999 AS ThuTuChuong, -- Gán thứ tự cao để Bài tập hiển thị cuối cùng
+            a.AssignmentID AS ThuTu
+        FROM Assignments a
+        INNER JOIN Courses c ON a.CourseID = c.CourseID
+        LEFT JOIN StudentSubmissions sub ON a.AssignmentID = sub.AssignmentID
+        INNER JOIN TeacherInfo t_info ON c.TeacherID = t_info.AccountID
+        INNER JOIN Enrollments e ON c.CourseID = e.CourseID -- Chỉ lấy khóa đã ghi danh
+        WHERE e.StudentID = @StudentID
+    ) AS Resources
+    ORDER BY CourseID, ThuTuChuong, ThuTu;
+END;
+GO
+IF OBJECT_ID('sp_GetStudentAssignments', 'P') IS NOT NULL
+    DROP PROCEDURE sp_GetStudentAssignments;
+GO
+
+CREATE PROCEDURE sp_GetStudentAssignments
+    @StudentID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        a.AssignmentID,
+        a.Title AS TenBaiTap,
+        a.Description AS MoTa,
+        a.AssignedDate AS NgayGiao,
+        a.DueDate AS HanNop,
+        a.MaxScore AS DiemToiDa,
+        a.AttachmentPath AS TaiLieuDinhKem,
+        c.CourseID,
+        c.CourseName AS TenKhoaHoc,
+        t_user.FullName AS TenGiangVien,
+        s.SubmissionID,
+        s.Score AS DiemDat,
+        s.SubmissionDate AS NgayNop,
+        s.FileUrl AS FileBaiNop,
+        s.StudentNote AS GhiChuSinhVien,
+        s.TeacherFeedback AS NhanXetGiaoVien,
+        -- Tính toán Trạng thái
+        CASE
+            WHEN s.Score IS NOT NULL THEN N'Đã chấm'
+            WHEN s.SubmissionID IS NOT NULL AND s.Score IS NULL THEN N'Chờ chấm'
+            WHEN GETDATE() > a.DueDate THEN N'Quá hạn'
+            ELSE N'Chưa nộp'
+        END AS TrangThai,
+        -- Màu sắc Status
+        CASE
+            WHEN s.Score IS NOT NULL THEN N'badge-success'
+            WHEN GETDATE() > a.DueDate THEN N'badge-danger'
+            WHEN DATEDIFF(DAY, GETDATE(), a.DueDate) <= 2 AND s.SubmissionID IS NULL THEN N'badge-warning'
+            WHEN s.SubmissionID IS NOT NULL THEN N'badge-info'
+            ELSE N'badge-primary'
+        END AS StatusColor,
+        -- Thời gian còn lại (chỉ tính nếu chưa nộp và chưa quá hạn)
+        CASE
+            WHEN s.SubmissionID IS NOT NULL THEN N'Đã nộp'
+            WHEN GETDATE() > a.DueDate THEN N'Đã quá hạn'
+            ELSE 
+                ISNULL(CAST(DATEDIFF(HOUR, GETDATE(), a.DueDate) / 24 AS NVARCHAR) + N' ngày ' + 
+                       CAST(DATEDIFF(HOUR, GETDATE(), a.DueDate) % 24 AS NVARCHAR) + N' giờ' , N'Hết giờ')
+        END AS ThoiGianConLai,
+        DATEDIFF(DAY, GETDATE(), a.DueDate) AS SoNgayConLai,
+        DATEDIFF(HOUR, GETDATE(), a.DueDate) AS SoGioConLai,
+        -- Cờ Boolean
+        CASE WHEN s.SubmissionID IS NOT NULL AND s.SubmissionDate > a.DueDate THEN 1 ELSE 0 END AS DaNopTre,
+        CASE WHEN s.SubmissionID IS NOT NULL THEN 1 ELSE 0 END AS DaHoanThanh,
+        -- Điểm phần trăm
+        ISNULL(s.Score, 0) * 100.0 / a.MaxScore AS PhanTramDiem,
+        -- Format ngày tháng
+        CONVERT(NVARCHAR, a.AssignedDate, 103) AS NgayGiaoFormat,
+        CONVERT(NVARCHAR, a.DueDate, 103) AS HanNopFormat,
+        CONVERT(NVARCHAR, s.SubmissionDate, 103) + ' ' + CONVERT(NVARCHAR, s.SubmissionDate, 108) AS NgayNopFormat
+    FROM Assignments a
+    INNER JOIN Courses c ON a.CourseID = c.CourseID
+    INNER JOIN Accounts t_acc ON c.TeacherID = t_acc.AccountID
+    INNER JOIN Users t_user ON t_acc.AccountID = t_user.AccountID
+    LEFT JOIN Submissions s ON a.AssignmentID = s.AssignmentID AND s.StudentID = @StudentID
+    INNER JOIN Enrollments e ON c.CourseID = e.CourseID AND e.StudentID = @StudentID -- Lọc theo khóa đã ghi danh
+    ORDER BY a.DueDate;
+END;
+GO
+IF OBJECT_ID('sp_GetMyCoursesWithProgress', 'P') IS NOT NULL
+    DROP PROCEDURE sp_GetMyCoursesWithProgress;
+GO
+
+CREATE PROCEDURE sp_GetMyCoursesWithProgress
+    @StudentID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Lấy thông tin Giảng viên (Teacher's FullName)
+    WITH TeacherInfo AS (
+        SELECT u.AccountID, u.FullName AS TenGiangVien, u.AvatarUrl AS AnhGiangVien
+        FROM Users u 
+        INNER JOIN Accounts a ON u.AccountID = a.AccountID
+        WHERE a.Role = N'Teacher'
+    )
+    
+    SELECT
+        c.CourseID,
+        c.CourseName AS TenKhoaHoc,
+        c.ImageCover AS AnhBia,
+        c.Description AS MoTa,
+        cat.CategoryName AS DanhMuc,
+        cat.CategoryID,
+        t_info.TenGiangVien,
+        t_info.AnhGiangVien,
+        ISNULL(e.ProgressPercent, 0) AS TienDoHoc, 
+        ISNULL(e.CompletedLessons, 0) AS SoBaiHoanThanh,
+        c.TotalLessons AS TongSoBaiHoc,
+        (c.TotalLessons - ISNULL(e.CompletedLessons, 0)) AS SoBaiConLai,
+        -- Tính toán Tiến độ Text
+        CAST(ISNULL(e.CompletedLessons, 0) AS NVARCHAR) + N'/' + CAST(c.TotalLessons AS NVARCHAR) + N' bài' AS TienDoText,
+        CAST(ISNULL(e.ProgressPercent, 0) AS NVARCHAR) + N'%' AS PhanTramText,
+        -- Tính toán màu Progress Bar
+        CASE
+            WHEN ISNULL(e.ProgressPercent, 0) >= 80 THEN N'success'
+            WHEN ISNULL(e.ProgressPercent, 0) >= 50 THEN N'warning'
+            ELSE N'info'
+        END AS ProgressColor,
+        e.Status AS TrangThai,
+        e.Status AS TrangThaiText, -- Tầng GUI sẽ dịch sang TV
+        e.EnrollmentDate AS NgayDangKy,
+        ISNULL(e.AverageScore, 0.0) AS DiemTrungBinh
+    FROM Enrollments e
+    INNER JOIN Courses c ON e.CourseID = c.CourseID
+    INNER JOIN Categories cat ON c.CategoryID = cat.CategoryID
+    INNER JOIN TeacherInfo t_info ON c.TeacherID = t_info.AccountID
+    WHERE e.StudentID = @StudentID
+    ORDER BY e.EnrollmentDate DESC;
+END;
+GO
+IF OBJECT_ID('sp_GetStudentScoreSummary', 'P') IS NOT NULL
+    DROP PROCEDURE sp_GetStudentScoreSummary;
+GO
+
+CREATE PROCEDURE sp_GetStudentScoreSummary
+    @StudentID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Tính điểm trung bình tổng dựa trên điểm trung bình của các khóa học (AverageScore trong Enrollments)
+    SELECT
+        ISNULL(AVG(e.AverageScore * 1.0), 0) AS DiemTBTong,
+        ISNULL(MAX(s.Score), 0) AS DiemCaoNhat,
+        COUNT(s.SubmissionID) AS SoBaiDaCham,
+        -- Phân loại Xếp loại
+        CASE
+            WHEN AVG(e.AverageScore * 1.0) >= 8.5 THEN N'Giỏi'
+            WHEN AVG(e.AverageScore * 1.0) >= 7.0 THEN N'Khá'
+            WHEN AVG(e.AverageScore * 1.0) >= 5.0 THEN N'Trung bình'
+            ELSE N'Kém'
+        END AS XepLoai
+    FROM Enrollments e
+    LEFT JOIN Courses c ON e.CourseID = c.CourseID
+    LEFT JOIN Assignments a ON c.CourseID = a.CourseID
+    LEFT JOIN Submissions s ON a.AssignmentID = s.AssignmentID AND s.StudentID = e.StudentID
+    WHERE e.StudentID = @StudentID;
+END;
+GO

@@ -98,11 +98,17 @@ namespace StudyProcessManagement.Views.Admin
 
         private void btnLogout_Click(object sender, EventArgs e)
         {
-            if (MessageBox.Show("Bạn có chắc muốn đăng xuất?", "Xác nhận", MessageBoxButtons.YesNo) == DialogResult.Yes)
+            DialogResult result = MessageBox.Show(
+                "Bạn có chắc chắn muốn đăng xuất?",
+                "Xác nhận đăng xuất",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+            if (result == DialogResult.Yes)
             {
+                Application.Run(new SignIn());
+                //var loginForm = new StudyProcessManagement.Views.Login.SignIn();
+                //loginForm.Show();
                 this.Close();
-                var loginForm = new StudyProcessManagement.Views.Login.Login();
-                loginForm.Show();
             }
         }
     }

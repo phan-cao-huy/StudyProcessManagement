@@ -1,6 +1,6 @@
 ﻿namespace StudyProcessManagement.Views.Login
 {
-    partial class Login
+    partial class SignIn
     {
         /// <summary>
         /// Required designer variable.
@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Login));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SignIn));
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.TxtAccount = new System.Windows.Forms.TextBox();
@@ -37,7 +37,6 @@
             this.TxtPassword = new System.Windows.Forms.TextBox();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.BtnSignIn = new System.Windows.Forms.Button();
-            this.button1 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -112,7 +111,7 @@
             // 
             // BtnSignIn
             // 
-            this.BtnSignIn.Location = new System.Drawing.Point(282, 535);
+            this.BtnSignIn.Location = new System.Drawing.Point(355, 506);
             this.BtnSignIn.Name = "BtnSignIn";
             this.BtnSignIn.Size = new System.Drawing.Size(99, 42);
             this.BtnSignIn.TabIndex = 7;
@@ -120,22 +119,12 @@
             this.BtnSignIn.UseVisualStyleBackColor = true;
             this.BtnSignIn.Click += new System.EventHandler(this.BtnSignIn_Click);
             // 
-            // button1
-            // 
-            this.button1.Location = new System.Drawing.Point(434, 535);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(99, 42);
-            this.button1.TabIndex = 8;
-            this.button1.Text = "Quên mật khẩu";
-            this.button1.UseVisualStyleBackColor = true;
-            // 
             // Login
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
             this.ClientSize = new System.Drawing.Size(882, 622);
-            this.Controls.Add(this.button1);
             this.Controls.Add(this.BtnSignIn);
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.label4);
@@ -165,6 +154,5 @@
         private System.Windows.Forms.TextBox TxtPassword;
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.Button BtnSignIn;
-        private System.Windows.Forms.Button button1;
     }
 }

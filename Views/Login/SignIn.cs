@@ -13,14 +13,14 @@ using static StudyProcessManagement.Data.StudentSession; // Để truy cập Stu
 
 namespace StudyProcessManagement.Views.Login
 {
-    public partial class Login : Form
+    public partial class SignIn : Form
     {
         // Khởi tạo AccountService cho Admin/Teacher
         AccountService user = new AccountService();
         // Khởi tạo DataProcess cho Student
         private DataProcessDAL dal = new DataProcessDAL();
 
-        public Login()
+        public SignIn()
         {
             InitializeComponent();
         }
