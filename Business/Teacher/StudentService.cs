@@ -36,34 +36,67 @@ namespace StudyProcessManagement.Business.Teacher
         /// <summary>
         /// Lấy danh sách học viên (có filter theo khóa học, trạng thái, search)
         /// </summary>
-        public DataTable GetStudents(string teacherID, string courseID = "", string statusFilter = "Tất cả trạng thái", string searchKeyword = "")
-        {
-            string query = @"
-                SELECT 
+        public DataTable GetStudents(
+                    string teacherID,
+                    string courseID = null,
+                    string statusFilter = "Tất cả trạng thái",
+                    string searchKeyword = null)
+                        {
+                            string query = @"
+                SELECT
                     e.StudentID AS UserID,
                     u.FullName,
                     a.Email,
                     c.CourseName,
                     e.EnrollmentDate,
-                    ISNULL(e.ProgressPercent, 0) AS ProgressPercent,
+                    -- Tính tiến độ dựa trên LessonProgress
+                    ISNULL(
+                        CASE 
+                            WHEN tl.TotalLessons = 0 THEN 0
+                            ELSE CAST(100.0 * ISNULL(cl.CompletedLessons, 0) / tl.TotalLessons AS INT)
+                        END,
+                    0) AS ProgressPercent,
                     ISNULL(e.Status, N'Learning') AS Status
                 FROM Enrollments e
-                INNER JOIN Users u ON e.StudentID = u.UserID
-                INNER JOIN Accounts a ON u.AccountID = a.AccountID
-                INNER JOIN Courses c ON e.CourseID = c.CourseID
-                WHERE c.TeacherID = @TeacherID
-                    AND (@CourseID = '' OR e.CourseID = @CourseID)
-                    AND (@Search = '' OR u.FullName LIKE '%' + @Search + '%' OR a.Email LIKE '%' + @Search + '%')
-                    AND (@Status = N'Tất cả trạng thái' OR e.Status = @Status)
-                ORDER BY e.EnrollmentDate DESC";
+                INNER JOIN Users u      ON e.StudentID = u.UserID
+                INNER JOIN Accounts a   ON u.AccountID = a.AccountID
+                INNER JOIN Courses c    ON e.CourseID = c.CourseID
+                -- Tổng số bài học của khóa học
+                LEFT JOIN (
+                    SELECT CourseID, COUNT(*) AS TotalLessons
+                    FROM Lessons
+                    GROUP BY CourseID
+                ) tl ON tl.CourseID = e.CourseID
+                -- Số bài học đã hoàn thành theo LessonProgress
+                LEFT JOIN (
+                    SELECT lp.StudentID, l.CourseID, COUNT(*) AS CompletedLessons
+                    FROM LessonProgress lp
+                    INNER JOIN Lessons l ON lp.LessonID = l.LessonID
+                    WHERE lp.IsCompleted = 1
+                    GROUP BY lp.StudentID, l.CourseID
+                ) cl ON cl.StudentID = e.StudentID AND cl.CourseID = e.CourseID
+                WHERE
+                    c.TeacherID = @TeacherID
+                    AND (@CourseID IS NULL OR e.CourseID = @CourseID)
+                    AND (
+                        @Search IS NULL
+                        OR u.FullName LIKE @Search
+                        OR a.Email   LIKE @Search
+                    )
+                    AND (
+                        @Status = N'Tất cả trạng thái'
+                        OR e.Status = @Status
+                    )
+                ORDER BY e.EnrollmentDate DESC;
+                ";
 
             var parameters = new Dictionary<string, object>
-            {
-                { "@TeacherID", teacherID },
-                { "@CourseID", courseID ?? "" },
-                { "@Search", searchKeyword ?? "" },
-                { "@Status", statusFilter ?? "Tất cả trạng thái" }
-            };
+    {
+        { "TeacherID", teacherID },
+        { "CourseID", string.IsNullOrEmpty(courseID) ? (object)DBNull.Value : courseID },
+        { "Search", string.IsNullOrWhiteSpace(searchKeyword) ? (object)DBNull.Value : $"%{searchKeyword}%" },
+        { "Status", string.IsNullOrEmpty(statusFilter) ? "Tất cả trạng thái" : statusFilter }
+    };
 
             return dataProcess.ReadData(query, parameters);
         }

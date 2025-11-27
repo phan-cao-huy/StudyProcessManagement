@@ -1,8 +1,9 @@
-﻿using System;
-using System.Drawing;
-using System.Windows.Forms;
+﻿using StudyProcessManagement.Business.Teacher; // ✅ Import Service
+using System;
 using System.Data;
-using StudyProcessManagement.Business.Teacher; // ✅ Import Service
+using System.Drawing;
+using System.IO;
+using System.Windows.Forms;
 
 namespace StudyProcessManagement.Views.Teacher.Controls
 {
@@ -35,7 +36,13 @@ namespace StudyProcessManagement.Views.Teacher.Controls
         private Button btnSave;
         private Button btnAddLesson;
         private Button btnDelete;
-
+        private string originalSectionName = "";
+        private string originalLessonName = "";
+        private string originalLessonDesc = "";
+        private string originalVideoUrl = "";
+        private string originalMaterials = "";
+        private byte[] selectedFileData = null;
+        private string selectedFileName = null;
         // ✅ Thay vì connectionString, dùng Service
         private CourseContentService courseContentService;
         private string currentTeacherID = "USR002"; // TODO: Lấy từ session/login
@@ -545,12 +552,16 @@ namespace StudyProcessManagement.Views.Teacher.Controls
                 selectedLessonID = null;
                 ClearLessonForm();
                 txtCurrentSectionName.Text = e.Node.Text;
+                originalSectionName = e.Node.Text; // Lưu giá trị ban đầu
             }
             else if (type == "Lesson")
             {
                 LoadLessonDetails(id);
                 if (e.Node.Parent != null)
+                {
                     txtCurrentSectionName.Text = e.Node.Parent.Text;
+                    originalSectionName = e.Node.Parent.Text; // Lưu giá trị ban đầu
+                }
             }
         }
 
@@ -558,7 +569,6 @@ namespace StudyProcessManagement.Views.Teacher.Controls
         {
             try
             {
-                // ✅ Gọi Service
                 DataTable dt = courseContentService.GetLessonDetails(lessonID);
 
                 if (dt.Rows.Count > 0)
@@ -567,7 +577,25 @@ namespace StudyProcessManagement.Views.Teacher.Controls
                     txtLessonName.Text = row["LessonTitle"].ToString();
                     txtLessonDescription.Text = row["Content"].ToString();
                     txtVideoUrl.Text = row["VideoUrl"].ToString();
-                    txtMaterials.Text = row["AttachmentUrl"].ToString();
+
+                    // Hiển thị tên file nếu có
+                    if (row["AttachmentName"] != DBNull.Value && !string.IsNullOrEmpty(row["AttachmentName"].ToString()))
+                    {
+                        txtMaterials.Text = row["AttachmentName"].ToString();
+                        selectedFileName = row["AttachmentName"].ToString();
+                        // Lấy file data nếu cần
+                        if (row["AttachmentData"] != DBNull.Value)
+                        {
+                            selectedFileData = (byte[])row["AttachmentData"];
+                        }
+                    }
+                    else
+                    {
+                        txtMaterials.Text = "Chọn file...";
+                        selectedFileData = null;
+                        selectedFileName = null;
+                    }
+
                     selectedLessonID = lessonID;
                     selectedSectionID = row["SectionID"].ToString();
                     isEditingLesson = true;
@@ -625,31 +653,51 @@ namespace StudyProcessManagement.Views.Teacher.Controls
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
-            // --- Khi chỉ sửa tên chương ---
+            // --- Khi chỉ sửa tên chương (không có tên bài học) ---
             if (string.IsNullOrWhiteSpace(txtLessonName.Text))
             {
-                // Xác nhận trước khi cập nhật tên chương
+                // Kiểm tra có chọn chương không
+                if (string.IsNullOrEmpty(selectedSectionID))
+                {
+                    MessageBox.Show("Vui lòng chọn chương hoặc bài học để chỉnh sửa!", "Thông báo",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                string newSectionName = txtCurrentSectionName.Text?.Trim();
+
+                // Kiểm tra tên chương không được trống
+                if (string.IsNullOrWhiteSpace(newSectionName))
+                {
+                    MessageBox.Show("Tên chương không được để trống!", "Thông báo",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    txtCurrentSectionName.Focus();
+                    return;
+                }
+
+                // Kiểm tra có thay đổi không
+                if (newSectionName == originalSectionName)
+                {
+                    MessageBox.Show("Không có thay đổi nào!", "Thông báo",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                // Có thay đổi -> hỏi xác nhận
                 var confirm = MessageBox.Show("Bạn có chắc chắn muốn thay đổi tên chương này?",
                                               "Xác nhận",
                                               MessageBoxButtons.YesNo,
                                               MessageBoxIcon.Question);
                 if (confirm == DialogResult.No) return;
 
-                if (!string.IsNullOrEmpty(selectedSectionID))
+                try
                 {
-                    string newSectionName = txtCurrentSectionName.Text?.Trim();
-                    if (string.IsNullOrWhiteSpace(newSectionName))
-                    {
-                        MessageBox.Show("Tên chương không được để trống!", "Thông báo",
-                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        txtCurrentSectionName.Focus();
-                        return;
-                    }
                     bool updated = courseContentService.UpdateSectionName(selectedSectionID, newSectionName);
                     if (updated)
                     {
                         MessageBox.Show("Cập nhật tên chương thành công!", "Thành công",
                             MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        originalSectionName = newSectionName; // Cập nhật giá trị ban đầu
                         LoadCourseStructure(selectedCourseID);
                     }
                     else
@@ -658,51 +706,71 @@ namespace StudyProcessManagement.Views.Teacher.Controls
                             MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
-                return; // Thoát hàm, không validate gì thêm
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Lỗi khi cập nhật: " + ex.Message, "Lỗi",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                return;
             }
 
             // --- Khi có tên bài học (thêm/sửa bài học) ---
-            var confirmSaveLesson = MessageBox.Show("Bạn có chắc chắn muốn lưu bài học này?",
-                                                    "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (confirmSaveLesson == DialogResult.No) return;
-
-            if (string.IsNullOrWhiteSpace(txtLessonName.Text))
-            {
-                MessageBox.Show("Vui lòng nhập tên bài học!", "Thông báo",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtLessonName.Focus();
-                return;
-            }
             if (string.IsNullOrEmpty(selectedSectionID))
             {
                 MessageBox.Show("Vui lòng chọn chương!", "Thông báo",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+
+            // Nếu đang sửa bài học -> kiểm tra có thay đổi không
+            if (isEditingLesson)
+            {
+                bool hasChanges = txtLessonName.Text != originalLessonName ||
+                                  txtLessonDescription.Text != originalLessonDesc ||
+                                  txtVideoUrl.Text != originalVideoUrl ||
+                                  txtMaterials.Text != originalMaterials;
+
+                if (!hasChanges)
+                {
+                    MessageBox.Show("Không có thay đổi nào!", "Thông báo",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+            }
+
+            // Hỏi xác nhận
+            string confirmMsg = isEditingLesson ? "Bạn có chắc chắn muốn cập nhật bài học này?"
+                                                : "Bạn có chắc chắn muốn thêm bài học mới?";
+            var confirmSaveLesson = MessageBox.Show(confirmMsg, "Xác nhận",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (confirmSaveLesson == DialogResult.No) return;
+
             try
             {
-                if (isEditingLesson && !string.IsNullOrEmpty(selectedLessonID))
-                {
-                    courseContentService.UpdateLesson(
-                        selectedLessonID,
-                        txtLessonName.Text,
-                        txtLessonDescription.Text,
-                        txtVideoUrl.Text,
-                        txtMaterials.Text
-                    );
+                        if (isEditingLesson && !string.IsNullOrEmpty(selectedLessonID))
+                        {
+                            courseContentService.AddLesson(
+                            selectedCourseID,
+                            selectedSectionID,
+                            txtLessonName.Text,
+                            txtLessonDescription.Text,
+                            txtVideoUrl.Text,
+                            selectedFileData, 
+                            selectedFileName       
+        );
                     MessageBox.Show("Cập nhật bài học thành công!", "Thành công",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else
                 {
-                    courseContentService.AddLesson(
-                        selectedCourseID,
-                        selectedSectionID,
-                        txtLessonName.Text,
-                        txtLessonDescription.Text,
-                        txtVideoUrl.Text,
-                        txtMaterials.Text
-                    );
+                    courseContentService.UpdateLesson(
+                    selectedLessonID,
+                    txtLessonName.Text,
+                    txtLessonDescription.Text,
+                    txtVideoUrl.Text,
+                    selectedFileData,
+                    selectedFileName       
+);
                     MessageBox.Show("Thêm bài học thành công!", "Thành công",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
@@ -786,7 +854,29 @@ namespace StudyProcessManagement.Views.Teacher.Controls
 
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
-                txtMaterials.Text = openFileDialog.FileName;
+                try
+                {
+                    // Kiểm tra kích thước file (giới hạn 10MB)
+                    long fileSize = new FileInfo(openFileDialog.FileName).Length;
+                    if (fileSize > 10 * 1024 * 1024)
+                    {
+                        MessageBox.Show("File không được vượt quá 10MB!", "Lỗi",
+                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    // Đọc file thành byte[]
+                    selectedFileData = File.ReadAllBytes(openFileDialog.FileName);
+                    selectedFileName = Path.GetFileName(openFileDialog.FileName);
+                    txtMaterials.Text = selectedFileName;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Lỗi đọc file: " + ex.Message, "Lỗi",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    selectedFileData = null;
+                    selectedFileName = null;
+                }
             }
         }
 
@@ -798,6 +888,10 @@ namespace StudyProcessManagement.Views.Teacher.Controls
             txtMaterials.Text = "Chọn file...";
             isEditingLesson = false;
             selectedLessonID = "";
+
+            // Reset file data
+            selectedFileData = null;
+            selectedFileName = null;
         }
 
         // =============================================
