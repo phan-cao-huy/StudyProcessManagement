@@ -71,7 +71,7 @@ namespace StudyProcessManagement.Business.Teacher
         /// <summary>
         /// Tạo bài tập với file đính kèm
         /// </summary>
-        
+
 
         /// <summary>
         /// Lấy file đính kèm của bài tập
@@ -100,31 +100,63 @@ namespace StudyProcessManagement.Business.Teacher
     DateTime assignedDate, DateTime dueDate, decimal maxScore,
     byte[] attachmentData, string attachmentName)
         {
-            string sql = @"UPDATE Assignments 
-        SET CourseID = @CourseID,
-            Title = @Title,
-            Description = @Description,
-            AssignedDate = @AssignedDate,
-            DueDate = @DueDate,
-            MaxScore = @MaxScore,
-            AttachmentData = @AttachmentData,
-            AttachmentName = @AttachmentName
-        WHERE AssignmentID = @AssignmentID";
+            // ✅ FIX: Nếu KHÔNG có file mới, chỉ update thông tin khác, GIỮ NGUYÊN file cũ
+            string sql;
+            Dictionary<string, object> parameters;
 
-            var parameters = new Dictionary<string, object>
-    {
-        { "@AssignmentID", assignmentID },
-        { "@CourseID", courseID },
-        { "@Title", title },
-        { "@Description", description ?? "" },
-        { "@AssignedDate", assignedDate },
-        { "@DueDate", dueDate },
-        { "@MaxScore", maxScore },
-        { "@AttachmentData", (object)attachmentData ?? DBNull.Value },
-        { "@AttachmentName", (object)attachmentName ?? DBNull.Value }
-    };
+            if (attachmentData != null && attachmentData.Length > 0)
+            {
+                // CÓ file mới → Update cả file
+                sql = @"UPDATE Assignments
+            SET CourseID = @CourseID,
+                Title = @Title,
+                Description = @Description,
+                AssignedDate = @AssignedDate,
+                DueDate = @DueDate,
+                MaxScore = @MaxScore,
+                AttachmentData = @AttachmentData,
+                AttachmentName = @AttachmentName
+            WHERE AssignmentID = @AssignmentID";
+
+                parameters = new Dictionary<string, object>
+        {
+            { "@AssignmentID", assignmentID },
+            { "@CourseID", courseID },
+            { "@Title", title },
+            { "@Description", description ?? "" },
+            { "@AssignedDate", assignedDate },
+            { "@DueDate", dueDate },
+            { "@MaxScore", maxScore },
+            { "@AttachmentData", attachmentData },
+            { "@AttachmentName", attachmentName }
+        };
+            }
+            else
+            {
+                // KHÔNG có file mới → Chỉ update thông tin, giữ nguyên file cũ
+                sql = @"UPDATE Assignments
+            SET CourseID = @CourseID,
+                Title = @Title,
+                Description = @Description,
+                AssignedDate = @AssignedDate,
+                DueDate = @DueDate,
+                MaxScore = @MaxScore
+            WHERE AssignmentID = @AssignmentID";
+
+                parameters = new Dictionary<string, object>
+        {
+            { "@AssignmentID", assignmentID },
+            { "@CourseID", courseID },
+            { "@Title", title },
+            { "@Description", description ?? "" },
+            { "@AssignedDate", assignedDate },
+            { "@DueDate", dueDate },
+            { "@MaxScore", maxScore }
+        };
+            }
 
             return dataProcess.ChangeData(sql, parameters);
         }
+
     }
 }

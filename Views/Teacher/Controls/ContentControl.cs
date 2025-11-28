@@ -747,33 +747,36 @@ namespace StudyProcessManagement.Views.Teacher.Controls
 
             try
             {
-                        if (isEditingLesson && !string.IsNullOrEmpty(selectedLessonID))
-                        {
-                            courseContentService.AddLesson(
-                            selectedCourseID,
-                            selectedSectionID,
-                            txtLessonName.Text,
-                            txtLessonDescription.Text,
-                            txtVideoUrl.Text,
-                            selectedFileData, 
-                            selectedFileName       
-        );
+                if (isEditingLesson && !string.IsNullOrEmpty(selectedLessonID))
+                {
+                    // ✅ ĐANG SỬA → Gọi UpdateLesson
+                    courseContentService.UpdateLesson(
+                        selectedLessonID,
+                        txtLessonName.Text,
+                        txtLessonDescription.Text,
+                        txtVideoUrl.Text,
+                        selectedFileData,
+                        selectedFileName
+                    );
                     MessageBox.Show("Cập nhật bài học thành công!", "Thành công",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else
                 {
-                    courseContentService.UpdateLesson(
-                    selectedLessonID,
-                    txtLessonName.Text,
-                    txtLessonDescription.Text,
-                    txtVideoUrl.Text,
-                    selectedFileData,
-                    selectedFileName       
-);
+                    // ✅ ĐANG THÊM MỚI → Gọi AddLesson
+                    courseContentService.AddLesson(
+                        selectedCourseID,
+                        selectedSectionID,
+                        txtLessonName.Text,
+                        txtLessonDescription.Text,
+                        txtVideoUrl.Text,
+                        selectedFileData,
+                        selectedFileName
+                    );
                     MessageBox.Show("Thêm bài học thành công!", "Thành công",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
+
                 LoadCourseStructure(selectedCourseID);
                 ClearLessonForm();
             }

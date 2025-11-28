@@ -47,7 +47,7 @@ namespace StudyProcessManagement.Business.Teacher
 
         public bool GradeSubmission(string submissionID, decimal score, string feedback)
         {
-            string sql = "EXEC spGradeSubmission @SubmissionID, @Score, @TeacherFeedback";
+            string sql = "EXEC sp_GradeSubmission @SubmissionID, @Score, @TeacherFeedback";
 
             var parameters = new Dictionary<string, object>()
             {
